@@ -254,7 +254,7 @@ function wipe(){if(!confirm('¿Borrar todo el progreso?'))return;localStorage.re
 const CPAL=['#ff6b6b','#14b8a6','#ec4899','#84cc16','#f97316','#6366f1'];
 let BM=null,bmC='';
 const cuCount=()=>S.cl.reduce((a,l)=>a+l.st.filter(s=>!s.e).length,0);
-const cuCost=()=>Math.floor(150000*Math.pow(1.15,cuCount()));
+const cuCost=()=>buyCost();
 function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy||1;let t=((px-ax)*dx+(py-ay)*dy)/l;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy))}
 function chkSeg(prev,x,y,skip){if(!prev)return'';const p=ST[prev],d=Math.hypot(p.x-x,p.y-y);if(d<120)return'Muy cerca de la estación anterior';if(d>600)return'Demasiado lejos (máx. 600)';
 for(const n in ST){if(n===prev||n===skip)continue;const s=ST[n];if(segDist(s.x,s.y,p.x,p.y,x,y)<45)return'El tramo pasa por '+n}return''}
