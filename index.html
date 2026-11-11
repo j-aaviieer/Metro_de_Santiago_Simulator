@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Metro de Santiago Simulator</title><link rel="stylesheet" href="css/style.css"></head><body>
+<title>Metro de Santiago Tycoon</title><link rel="stylesheet" href="css/style.css"></head><body>
 <svg id="map"><g id="w"></g></svg>
 <div class="panel" id="tip"></div>
 <div class="panel" id="srch"><input id="sb" list="dl" placeholder="🔎 Buscar estación"><datalist id="dl"></datalist></div>
-<div id="toasts"></div><div class="panel" id="evb"></div>
+<div id="toasts"></div><div class="panel" id="bmb"></div><div class="panel" id="evb"></div>
 <div class="panel" id="rbp" onclick="show(mRebirth)"></div>
 <div class="panel" id="stats">
 <div><span>📈 Ganado</span><span id="sE"></span></div><div><span>👥 Pasajeros</span><span id="sP"></span></div>
@@ -17,11 +17,12 @@
 <button class="mb" style="--c:#0ea5e9" onclick="show(mShop)"><span>🛍️</span>Tienda</button>
 <button class="mb" style="--c:#f0a30f" onclick="show(mPlaces)"><span>🏛️</span>Lugares</button>
 <button class="mb" style="--c:#f59e0b" onclick="show(mAch)"><span>🏆</span>Logros</button>
+<button class="mb" style="--c:#14b8a6" onclick="show(mBuild)"><span>🛠️</span>Construir</button>
 <button class="mb" style="--c:#e8467c" onclick="show(mMusic)"><span>🎵</span>Música</button>
 <button class="mb" style="--c:#7c4dff" onclick="show(mRebirth)"><span>🔁</span>Renacer</button>
 <button class="mb" style="--c:#8b95a1" onclick="show(mSet)"><span>⚙️</span>Ajustes</button></div>
 <div class="panel" id="zoom"><button onclick="zoom(1.25)">+</button><button onclick="zoom(.8)">−</button></div>
-<div id="mp"><button onclick="ytStop()">✕</button><iframe id="mpf" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
+<div id="nw"><div class="nc" id="ncard"><div class="nhd">📰 SANTIAGO HOY · ÚLTIMA HORA</div><div id="nimg"></div><h2 id="nh"></h2><p id="nt"></p><div class="nbt"><button class="btn" id="nclaim" style="--c:#f0a30f" onclick="claimNews()"></button><button class="btn" style="--c:#8b95a1" onclick="closeNews()">✕ Cerrar</button></div></div></div>
 <div id="ov" onclick="if(event.target==this)closeM()"><div id="md"></div></div>
 <script src="music/playlist.js"></script><script src="js/data.js"></script><script src="js/audio.js"></script><script src="js/game.js"></script>
 </body></html>

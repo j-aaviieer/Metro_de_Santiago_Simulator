@@ -1,9 +1,10 @@
 const $=id=>document.getElementById(id);
+const NBASE=Object.keys(LINES).length;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 // ---------- Estado ----------
 const fresh=()=>({money:700,earned:0,pass:0,own:{},place:{},trains:{},cond:100,rb:0,start:false,up:{},fu:{},tok:0,lineDone:{},ach:{},
-stat:{trains:0,ups:0,ev:0,evNeg:0,roja:0,music:0},tut:0,tutDone:false,ev:null,nextEv:0,t:0});
+stat:{trains:0,ups:0,ev:0,evNeg:0,roja:0,music:0},tut:0,tutDone:false,ev:null,nextEv:0,t:0,cl:[],bu:false,newsMode:'full'});
 let S=fresh();try{const o=JSON.parse(localStorage.getItem('metroSt2')||'{}');Object.assign(S,o);S.stat=Object.assign(fresh().stat,o.stat||{})}catch(e){}
 // ---------- Mejoras (dinero: se pierden al renacer) y fichas (permanentes) ----------
 const UP={pas:{n:'Difusión y tarifas',e:'👥',d:'+10% pasajeros e ingresos por nivel',max:10,base:4000,g:2.1},
@@ -34,15 +35,39 @@ if(id==='golpe'){const lost=.5*(1-.15*ul('seg'));for(const k in S.trains)S.train
 toast(`${e.e} <b>${e.n}</b> — ${e.txt}`,e.neg?'bad':'good',8000);e.neg?SFX.err():SFX.up()}
 function endEv(now){const e=EVS[S.ev.id];S.stat.ev++;if(e.neg)S.stat.evNeg++;if(S.ev.id==='roja')S.stat.roja++;S.ev=null;S.nextEv=now+rnd(90,180)*1000;toast(`✅ Terminó: ${e.n}.`,'',4000)}
 function evTick(now){if(nOwn()<3)return;if(S.ev){if(now>=S.ev.end)endEv(now);return}if(!S.nextEv)S.nextEv=now+rnd(60,120)*1000;if(now>=S.nextEv)startEv(now)}
-// ---------- Noticias y avisos ----------
-const NEWS=["Ciclistas llenan los bicicleteros del metro este fin de semana.","Santiago amanece con smog: más gente prefiere el metro.","Feria artesanal en Plaza de Armas atrae turistas.","Se agota el mote con huesillo en las estaciones.","Estudiantes llenan los vagones camino a la universidad.","Concierto gratis en el Parque O'Higgins: ¡más pasajeros!","Turistas piden más información en inglés en el metro.","Campaña: «Dejen bajar antes de subir».","Un vendedor ofrece sopaipillas en el andén.","Nueva exposición en el Centro Cultural La Moneda.","Ola de calor: los vagones con aire acondicionado son un éxito.","Un completo italiano gigante sorprende en Estación Central."];
-const GIFTS=["Un músico callejero se vuelve viral en el andén y deja propinas para la red.","Récord: todos los trenes llegaron a tiempo hoy.","Un perro quiltro viaja solo en la línea y se hace famoso.","Un turista pierde su billete de lotería y lo dona al metro."];
-const TIPS=["Repara tus trenes seguido para mantener alta la felicidad.","Completa una línea entera y gana +20% en toda ella.","Las fichas de renacer dan mejoras permanentes en 🛍️ Tienda.","El Plan de emergencia reduce el daño de temporales y golpes."];
-let nextNews=0;
+// ---------- Noticias a pantalla completa (o minimizadas) ----------
+const COIN='<svg viewBox="0 0 100 100" width="110" height="110"><circle cx="50" cy="50" r="44" fill="#f9b928" stroke="#e29a00" stroke-width="8"/><circle cx="50" cy="50" r="31" fill="none" stroke="#e29a00" stroke-width="3" stroke-dasharray="4 4"/><text x="50" y="67" font-size="46" font-weight="900" text-anchor="middle" fill="#a56a00" font-family="Segoe UI,sans-serif">$</text></svg>';
+const nimg=i=>i==='coin'?COIN:`<span style="font-size:88px;line-height:1">${i}</span>`;
+const NEWS=[{i:'🚲',h:'Ciclistas llenan los bicicleteros',t:'Este fin de semana cientos de ciclistas combinaron bici y metro para recorrer la ciudad.'},
+{i:'🌫️',h:'Santiago amanece con smog',t:'La mala calidad del aire hace que más gente deje el auto en casa y prefiera el metro.'},
+{i:'🧺',h:'Feria artesanal en Plaza de Armas',t:'Puestos de cerámica y tejidos atraen turistas que llegan en metro desde temprano.'},
+{i:'🥤',h:'Se agota el mote con huesillo',t:'Con el calor, los vendedores cerca de las estaciones se quedaron sin existencias antes del mediodía.'},
+{i:'🎓',h:'Estudiantes llenan los vagones',t:'Comienza la semana de exámenes y las líneas que pasan por universidades van repletas.'},
+{i:'🎤',h:'Concierto gratis en el parque',t:'Miles de personas llegan en metro a un concierto al aire libre. ¡Prepárate para la hora punta!'},
+{i:'🧳',h:'Llegan los turistas',t:'Un crucero y varios vuelos aterrizaron hoy: los visitantes preguntan por las estaciones más famosas.'},
+{i:'🙋',h:'Campaña «Dejen bajar antes de subir»',t:'El metro lanza una campaña de buenos modales para acelerar el flujo en los andenes.'},
+{i:'🥟',h:'Vendedor de sopaipillas en el andén',t:'Un vendedor ambulante se instaló en una estación y ya tiene fila de clientes.'},
+{i:'🖼️',h:'Nueva exposición cultural',t:'Un centro cultural abre una muestra gratuita y el metro es la mejor forma de llegar.'},
+{i:'☀️',h:'Ola de calor en Santiago',t:'Los vagones con aire acondicionado son el refugio favorito de los pasajeros esta semana.'},
+{i:'coin',h:'Se agotan las monedas en las máquinas',t:'Los pasajeros hacen fila para cambiar monedas antes de cargar su tarjeta. ¡Buen momento para el negocio!'},
+{i:'🌭',h:'Un completo italiano gigante',t:'Una pastelería de Estación Central sorprendió con un completo de dos metros que se hizo viral.'}];
+const GIFTS=[{i:'coin',h:'Turista dona su billete de lotería',t:'Un turista olvidó su billete premiado en el andén y lo donó al metro. ¡Cobra tu parte!'},
+{i:'🎸',h:'Músico callejero se hace viral',t:'Un video tocando en el andén recorre las redes y los fans dejan propinas para la red.'},
+{i:'🐶',h:'Un perro quiltro viaja solo',t:'Un perrito paseó por tu línea y se hizo famoso: ¡todos quieren fotografiarlo y dejan donaciones!'},
+{i:'coin',h:'Récord de recaudación',t:'Las máquinas de pasajes registraron su mejor jornada del año. Hay un bono para ti.'},
+{i:'🚇',h:'Todos los trenes llegaron a tiempo',t:'Puntualidad perfecta hoy. La empresa reparte un bono por buen servicio.'}];
+const TIPS=["Repara tus trenes seguido para mantener alta la felicidad.","Completa una línea entera y gana +20% en toda ella.","Las fichas de renacer dan mejoras permanentes en 🛍️ Tienda.","El Plan de emergencia reduce el daño de temporales y golpes.","Con CL$1M puedes construir tu propia línea en 🛠️ Construir."];
+let nextNews=0,NG=0;
 function toast(t,cls='',ms=6000,fn){const c=$('toasts'),e=document.createElement('div');e.className='toast '+cls;e.innerHTML=t;c.prepend(e);const rm=()=>{e.classList.add('out');setTimeout(()=>e.remove(),300)};e.onclick=()=>{if(fn)fn();rm()};setTimeout(rm,ms);while(c.children.length>4)c.lastChild.remove()}
-function newsTick(now){if(!nextNews){nextNews=now+rnd(20,40)*1000;return}if(now<nextNews)return;nextNews=now+rnd(40,75)*1000;SFX.news();const r=Math.random();
-if(r<.2){const g=Math.floor(calc().inc*30);toast(`📰 ${GIFTS[Math.floor(Math.random()*GIFTS.length)]}<br><small>Toca para cobrar +${$$(g)}</small>`,'gift',9000,()=>{S.money+=g;S.earned+=g;SFX.buy()})}
-else if(r<.35)toast('💡 '+TIPS[Math.floor(Math.random()*TIPS.length)]);else toast('📰 '+NEWS[Math.floor(Math.random()*NEWS.length)])}
+function pushNews(n,gift){const g=gift?Math.floor(calc().inc*30):0;
+if(S.newsMode==='mini'||!S.tutDone){toast(`📰 <b>${n.h}</b>${gift?`<br><small>Toca para cobrar +${$$(g)}</small>`:''}`,gift?'gift':'',gift?9000:6000,gift?()=>{S.money+=g;S.earned+=g;SFX.buy()}:null);SFX.news();return}
+NG=g;$('nimg').innerHTML=nimg(n.i);$('nh').textContent=n.h;$('nt').textContent=n.t;$('nclaim').style.display=gift?'':'none';$('nclaim').textContent='💰 Cobrar +'+$$(g);
+$('nw').style.display='flex';const c=$('ncard');c.classList.remove('in');void c.offsetWidth;c.classList.add('in');SFX.news()}
+function claimNews(){S.money+=NG;S.earned+=NG;SFX.buy();NG=0;$('nw').style.display='none'}
+function closeNews(){NG=0;$('nw').style.display='none';SFX.close()}
+function newsTick(now){if(!nextNews){nextNews=now+rnd(20,40)*1000;return}if(now<nextNews)return;
+if(BM||cur||$('nw').style.display==='flex'){nextNews=now+10000;return}nextNews=now+rnd(45,80)*1000;const r=Math.random();
+if(r<.2)pushNews(GIFTS[Math.floor(Math.random()*GIFTS.length)],1);else if(r<.32){toast('💡 '+TIPS[Math.floor(Math.random()*TIPS.length)]);SFX.news()}else pushNews(NEWS[Math.floor(Math.random()*NEWS.length)],0)}
 // ---------- Reglas ----------
 const fmt=n=>{for(const[v,s]of[[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']])if(n>=v){const q=n/v;return q.toFixed(q<10?2:1)+s}return Math.floor(n)+''};
 const $$=n=>'CL$'+fmt(n);
@@ -64,7 +89,7 @@ const canBuy=n=>S.start&&S.own[n]===undefined&&[...ST[n].adj].some(m=>S.own[m]!=
 const vis=n=>!S.start||S.own[n]!==undefined||canBuy(n);
 const nAch=()=>Object.keys(S.ach).length;
 function calc(){let base=0,pp=0;const sv={};for(const k in LINES)sv[k]=service(k);
-for(const n in S.own){const s=ST[n];let sr=0,c=0,lm=1;s.ls.forEach(l=>{if(S.trains[l]){sr+=sv[l];c++}if(S.lineDone[l])lm*=1.2});const f=(1+.5*S.own[n])*(c?sr/c:0)*lm;base+=20*f;pp+=4*f}
+for(const n in S.own){const s=ST[n];let sr=0,c=0,lm=1;s.ls.forEach(l=>{if(S.trains[l]){sr+=sv[l];c++}if(S.lineDone[l])lm*=1.2});const f=(1+.5*S.own[n])*(c?sr/c:0)*lm*(s.cu?25:1);base+=20*f;pp+=4*f}
 const e=evM(),np=nPl(),hm=.5+happy()/200,pb=1+.03*np,glob=(1+.1*ul('pas'))*(1+.75*S.rb)*(1+.1*fl('inc'))*(1+.01*nAch())*e.inc,tour=np*12*(1+.15*ul('tur'))*e.tour;
 return{inc:(base*(1+.12*ul('est'))*pb*hm+tour)*glob,pass:pp*hm*glob,np,tour:tour*glob}}
 // ---------- Mapa ----------
@@ -80,7 +105,7 @@ if(got)h+=`<text class="lb k" x="${s.x+dx}" y="${s.y+dy+42}">${p[0]}</text>`}
 h+=`<circle class="${b?'pulse':''}" cx="${s.x}" cy="${s.y}" r="${r}" fill="#fff" stroke="${o?'#222':b?'#f5a300':'#aab4bc'}" stroke-width="3"/>`;
 if(tr)s.ls.forEach((l,j)=>h+=`<circle cx="${s.x+(j-(s.ls.length-1)/2)*7}" cy="${s.y}" r="3" fill="${LINES[l].c}"/>`);
 h+=`<text class="lb ${o||b?'k':''}" x="${s.x}" y="${s.y+r+18}">${n}${o?' ·'+S.own[n]:''}</text></g>`});
-h+='<g id="tg" pointer-events="none"></g>';$('w').innerHTML=h;buildTrains()}
+h+='<g id="gh" pointer-events="none"></g><g id="tg" pointer-events="none"></g>';$('w').innerHTML=h;buildTrains()}
 // ---------- Trenes animados ----------
 let TR=[],lt=0;
 function buildTrains(){let h='';TR=[];
@@ -104,7 +129,7 @@ $('map').addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,vx:V.x
 addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));V.x=drag.vx+dx;V.y=drag.vy+dy;ap()});
 addEventListener('pointerup',()=>drag=null);
 $('map').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15,e.clientX,e.clientY)},{passive:false});
-$('map').addEventListener('click',e=>{if(moved>6)return;const g=e.target.closest('.st');if(g)clickSt(+g.dataset.i)});
+$('map').addEventListener('click',e=>{if(moved>6)return;if(BM){buildClick(e);return}const g=e.target.closest('.st');if(g)clickSt(+g.dataset.i)});
 $('dl').innerHTML=IDX.map(n=>`<option value="${n}">`).join('');
 $('sb').addEventListener('change',e=>{const n=e.target.value;if(!ST[n])return;e.target.value='';if(vis(n)){centerOn(n);if(!S.start)clickSt(IDX.indexOf(n))}else SFX.err()});
 // ---------- Modales ----------
@@ -134,7 +159,7 @@ function allUp(max){for(let r=0;r<(max?5:1);r++)IDX.forEach((n,i)=>{if(S.own[n]!
 function mLines(){const open=Object.keys(LINES).filter(k=>lineOwn(k)),c=calc();let ed=0;for(const k in LINES){const a=LINES[k].st;for(let i=1;i<a.length;i++)if(S.own[a[i]]!==undefined&&S.own[a[i-1]]!==undefined)ed++}
 let b=`<div class="g2">${B('🔗 Unir todo (½ cartera)','#22c36b','joinAll(S.money/2)')}${B('🔗 Unir todo (máx.)','#ff5a52','joinAll(S.money)')}${B('⬆️ Todas las estaciones +1','#7c4dff','allUp(0)')}${B('⏫ Todas las estaciones al MAX','#ff5a52','allUp(1)')}</div><b style="font-size:20px">🔓 Líneas abiertas</b>`;
 open.forEach(k=>{const L=LINES[k];b+=`<div class="row"><span class="chip" style="background:${L.c}">${k}</span><div><b style="font-size:18px">${L.nm} ${S.lineDone[k]?'✅ +20%':''}</b><br><small>estaciones ${lineOwn(k)} / ${L.st.length} · Trenes ${S.trains[k]||0} / necesarios ${need(k)}</small></div><span class="sv">Servicio ${Math.round(service(k)*100)}%</span></div>`});
-return{c:'#3b82f6',t:'Estado de líneas',s:`Líneas ${open.length} / ${Object.keys(LINES).length} · Tramos ${ed} / ${EDGES} · ${$$(c.inc)}/s`,b}}
+return{c:'#3b82f6',t:'Estado de líneas',s:`Líneas ${open.filter(k=>!LINES[k].custom).length} / ${NBASE} · Tramos ${ed} / ${EDGES} · ${$$(c.inc)}/s`,b}}
 function mTrains(){let b=`<div class="box" style="background:#e9f8ef;border-color:#bfe8cf"><div><b style="font-size:20px">🔧 Estado de los trenes ${Math.round(S.cond)}%</b><div class="pu" style="color:#2a6a45">Se desgastan poco a poco. Bajo el 70% baja la felicidad. Cada tren aparece recorriendo la línea (hasta 8 por línea).</div></div>${B('🔧 Reparar todo '+$$(repCost()),'#ff5a52','repair()',repCost())}</div>`;
 Object.keys(LINES).filter(k=>lineOwn(k)).forEach(k=>{const L=LINES[k];b+=`<div class="row" style="border-color:#e5e8ec"><span class="chip" style="background:${L.c}">${k}</span><div><b>${L.nm}</b><br><small>Trenes ${S.trains[k]} / necesarios ${need(k)} · Servicio ${Math.round(service(k)*100)}%</small></div><span style="margin-left:auto">${B('🚇 +1 tren '+$$(trCost(k)),'#22c36b',`addT('${k}')`,trCost(k))}</span></div>`});
 return{c:'#22c36b',t:'Trenes · Flota',s:`${nTrains()} trenes · estado ${Math.round(S.cond)}%`,b}}
@@ -160,22 +185,57 @@ A('est1','🚉','Primera parada','Empieza tu red',()=>nOwn()>=1);A('est10','🛤
 A('lv5','⭐','Nivel máximo','Una estación al nivel 5',()=>Object.values(S.own).some(l=>l>=5));A('lv5b','🌟','Estaciones de lujo','10 estaciones al nivel 5',()=>Object.values(S.own).filter(l=>l>=5).length>=10);
 A('tr5','🚇','Flota','Ten 5 trenes',()=>nTrains()>=5);A('tr20','🚆','Flota grande','Ten 20 trenes',()=>nTrains()>=20);A('tr50','🚄','Imperio ferroviario','Ten 50 trenes',()=>nTrains()>=50);
 A('pl1','📸','Turista','Compra un lugar de interés',()=>nPl()>=1);A('pl5','🧭','Guía turístico','Compra 5 lugares',()=>nPl()>=5);A('plall','🏛️','Patrimonio completo','Compra todos los lugares',()=>nPl()>=Object.keys(PL).length);
-A('ln1','🏁','Línea completa','Completa una línea (+20% en ella)',()=>Object.keys(S.lineDone).length>=1);A('ln3','🎯','Tres líneas','Completa 3 líneas',()=>Object.keys(S.lineDone).length>=3);A('lnall','🏆','Metro completo','Completa todas las líneas',()=>Object.keys(S.lineDone).length>=Object.keys(LINES).length);
+A('ln1','🏁','Línea completa','Completa una línea (+20% en ella)',()=>Object.keys(S.lineDone).length>=1);A('ln3','🎯','Tres líneas','Completa 3 líneas',()=>Object.keys(S.lineDone).length>=3);A('lnall','🏆','Metro completo','Completa todas las líneas',()=>Object.keys(S.lineDone).length>=NBASE);
 A('rb1','🔁','Renacido','Renace una vez',()=>S.rb>=1);A('rb3','♻️','Reincidente','Renace 3 veces',()=>S.rb>=3);A('rb5','🔥','Leyenda','Renace 5 veces',()=>S.rb>=5);
 A('m1','💵','Millonario','Gana CL$1M en total',()=>S.earned>=1e6);A('m2','💰','Multimillonario','Gana CL$1B en total',()=>S.earned>=1e9);A('m3','🤑','Magnate','Gana CL$1T en total',()=>S.earned>=1e12);
 A('p1','👥','Hora punta','100.000 pasajeros',()=>S.pass>=1e5);A('p2','🚏','Marea humana','10 millones de pasajeros',()=>S.pass>=1e7);
 A('u1','🛍️','Comprador','Compra una mejora',()=>S.stat.ups>=1);A('u2','🔧','Maxeado','Lleva una mejora al máximo',()=>Object.keys(UP).some(k=>ul(k)>=UP[k].max));A('t1','💠','Ficha de oro','Compra una mejora con fichas',()=>Object.values(S.fu).some(v=>v>0));
-A('e1','🌩️','Superviviente','Sobrevive a un evento malo',()=>S.stat.evNeg>=1);A('e2','🛡️','Veterano de crisis','Sobrevive a 5 eventos malos',()=>S.stat.evNeg>=5);A('e3','⚽','Hincha de La Roja','Vive un Partido de La Roja',()=>S.stat.roja>=1);A('mu','🎵','Melómano','Escucha música chilena',()=>S.stat.music>=1);
+A('e1','🌩️','Superviviente','Sobrevive a un evento malo',()=>S.stat.evNeg>=1);A('e2','🛡️','Veterano de crisis','Sobrevive a 5 eventos malos',()=>S.stat.evNeg>=5);A('e3','⚽','Hincha de La Roja','Vive un Partido de La Roja',()=>S.stat.roja>=1);A('cu1','🛠️','Constructor','Crea tu primera estación propia',()=>cuCount()>=1);A('cu2','🏗️','Urbanista','Ten una línea propia con 10 estaciones',()=>S.cl.some(l=>l.st.length>=10));A('mu','🎵','Melómano','Escucha música chilena',()=>S.stat.music>=1);
 function checkAch(){let n=0;for(const a of ACH)if(!S.ach[a.id]&&a.fn()){S.ach[a.id]=1;n++;toast(`🏆 <b>Logro: ${a.n}</b><br><small>${a.d} · +1% ingresos</small>`,'good',6000)}if(n)SFX.ach()}
-function checkLines(){for(const k in LINES)if(!S.lineDone[k]&&lineOwn(k)===LINES[k].st.length){S.lineDone[k]=1;toast(`🏁 <b>¡${LINES[k].nm} completa!</b><br><small>+20% de ingresos en toda la línea</small>`,'good',8000);SFX.rebirth()}}
+function checkLines(){for(const k in LINES)if(!S.lineDone[k]&&!LINES[k].custom&&lineOwn(k)===LINES[k].st.length){S.lineDone[k]=1;toast(`🏁 <b>¡${LINES[k].nm} completa!</b><br><small>+20% de ingresos en toda la línea</small>`,'good',8000);SFX.rebirth()}}
 function mAch(){let b='<div class="g2">';ACH.forEach(a=>{const d=S.ach[a.id];b+=`<div class="card ${d?'on':''}" style="${d?'':'opacity:.5'}"><b>${d?a.e:'🔒'} ${a.n}</b><small>${a.d}</small></div>`});
 return{c:'#f59e0b',t:'Logros',s:`${nAch()} / ${ACH.length} · +${nAch()}% ingresos`,b:b+'</div>'}}
 // ---------- Renacer y ajustes ----------
 function mRebirth(){const r=rbReq(),ok=S.money>=r;return{c:'#7c4dff',t:'Renacer',s:`Renacimientos: ${S.rb} · Multiplicador actual x${(1+.75*S.rb).toFixed(2)}`,b:`<div class="box"><div class="lvl">🔁</div><div><b style="font-size:19px">Necesitas ${$$(r)}</b><div class="pu">Tienes ${$$(S.money)} (${Math.min(100,Math.floor(S.money/r*100))}%)</div></div></div><div class="hint">Al renacer pierdes dinero, estaciones, trenes, lugares y mejoras de dinero. Ganas ingresos x${(1+.75*(S.rb+1)).toFixed(2)} para siempre y <b>${ok?tokGain():'1 o más'} fichas 💠</b> para la tienda. Eliges una nueva estación inicial.</div>${B('🔁 Renacer','#7c4dff','doRB()',ok?0:1e99)}`}}
-function doRB(){if(S.money<rbReq()||!confirm('¿Renacer? Reiniciarás tu red.'))return;const o=S,g=tokGain(),f=fresh();
-Object.assign(f,{rb:o.rb+1,earned:o.earned,pass:o.pass,tok:o.tok+g,fu:o.fu,ach:o.ach,stat:o.stat,tut:o.tut,tutDone:o.tutDone});f.money=700+3000*Math.pow(o.fu.cap||0,2);S=f;SFX.rebirth();closeM();render();hud();toast(`🔁 ¡Renaciste! +${g} fichas 💠`,'good',7000)}
-function mSet(){return{c:'#8b95a1',t:'Ajustes',s:'Se guarda solo en tu navegador',b:`<div class="hint">Todo funciona desde el HTML, sin servidor. Tu partida queda guardada en este navegador.</div>${B('📘 Ver tutorial de nuevo','#3b82f6','S.tut=0;S.tutDone=false;closeM()')}${B('🗑️ Borrar partida','#ff5a52','wipe()')}`}}
-function wipe(){if(!confirm('¿Borrar todo el progreso?'))return;localStorage.removeItem('metroSt2');S=fresh();closeM();render();hud()}
+function doRB(){if(S.money<rbReq()||!confirm('¿Renacer? Reiniciarás tu red.'))return;const o=S,g=tokGain(),f=fresh();clearCustom();
+Object.assign(f,{rb:o.rb+1,earned:o.earned,pass:o.pass,tok:o.tok+g,fu:o.fu,ach:o.ach,stat:o.stat,tut:o.tut,tutDone:o.tutDone,bu:o.bu,newsMode:o.newsMode});f.money=700+3000*Math.pow(o.fu.cap||0,2);S=f;SFX.rebirth();closeM();render();hud();toast(`🔁 ¡Renaciste! +${g} fichas 💠`,'good',7000)}
+function mSet(){return{c:'#8b95a1',t:'Ajustes',s:'Se guarda solo en tu navegador',b:`<div class="hint">Todo funciona desde el HTML, sin servidor. Tu partida queda guardada en este navegador.</div>${B(S.newsMode==='full'?'📰 Noticias: pantalla completa (tocar para minimizar)':'📰 Noticias: minimizadas (tocar para pantalla completa)','#0ea5e9',"S.newsMode=S.newsMode==='full'?'mini':'full';refresh()")}${B('📘 Ver tutorial de nuevo','#3b82f6','S.tut=0;S.tutDone=false;closeM()')}${B('🗑️ Borrar partida','#ff5a52','wipe()')}`}}
+function wipe(){if(!confirm('¿Borrar todo el progreso?'))return;localStorage.removeItem('metroSt2');clearCustom();S=fresh();closeM();render();hud()}
+// ---------- Construir líneas propias ----------
+const CPAL=['#ff6b6b','#14b8a6','#ec4899','#84cc16','#f97316','#6366f1'];
+let BM=null,bmC='';
+const cuCount=()=>S.cl.reduce((a,l)=>a+l.st.filter(s=>!s.e).length,0);
+const cuCost=()=>Math.floor(150000*Math.pow(1.15,cuCount()));
+function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy||1;let t=((px-ax)*dx+(py-ay)*dy)/l;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy))}
+function chkSeg(prev,x,y,skip){if(!prev)return'';const p=ST[prev],d=Math.hypot(p.x-x,p.y-y);if(d<120)return'Muy cerca de la estación anterior';if(d>600)return'Demasiado lejos (máx. 600)';
+for(const n in ST){if(n===prev||n===skip)continue;const s=ST[n];if(segDist(s.x,s.y,p.x,p.y,x,y)<45)return'El tramo pasa por '+n}return''}
+function chkNew(x,y){if(x<-1200||x>4800||y<-400||y>3300)return'Fuera del mapa';for(const n in ST){const s=ST[n];if(Math.hypot(s.x-x,s.y-y)<90)return'Muy cerca de '+n}return chkSeg(BM.last,x,y)}
+function cInject(l,nd){if(!LINES[l.id])LINES[l.id]={c:l.c,nm:l.nm,st:[],custom:1};
+if(!nd.e){ST[nd.n]={n:nd.n,x:nd.x,y:nd.y,ls:[],adj:new Set(),cu:1};IDX.push(nd.n)}
+const L=LINES[l.id],prev=L.st[L.st.length-1];L.st.push(nd.n);ST[nd.n].ls.push(l.id);if(prev){ST[nd.n].adj.add(prev);ST[prev].adj.add(nd.n);EDGES++}}
+function rebuildCustom(){S.cl.forEach(l=>l.st.forEach(nd=>cInject(l,nd)))}
+function clearCustom(){S.cl.forEach(l=>{l.st.forEach(nd=>{if(nd.e)ST[nd.n].ls=ST[nd.n].ls.filter(x=>x!==l.id);else{delete ST[nd.n];IDX.splice(IDX.indexOf(nd.n),1)}});EDGES-=Math.max(0,l.st.length-1);delete LINES[l.id]});
+for(const n in ST)ST[n].adj=new Set([...ST[n].adj].filter(m=>ST[m]));BM=null}
+function mBuild(){let b;
+if(!S.bu)b=`<div class="box"><div class="lvl">🛠️</div><div><b style="font-size:19px">Se desbloquea con CL$1M</b><div class="pu">Tienes ${$$(S.money)} (${Math.min(100,Math.floor(S.money/1e6*100))}%)</div></div></div>`;
+else{b=`<div class="hint">Toca el mapa para colocar estaciones nuevas (cada una se conecta con la anterior) o toca una estación tuya para conectarte a ella. Reglas: al menos 90 de separación con otras estaciones, tramos de 120 a 600 y sin pasar sobre otras estaciones. Tus estaciones propias rinden 25 veces más. Próxima estación: <b>${$$(cuCost())}</b>.</div>${B('➕ Nueva línea','#22c36b','newLine()')}`;
+S.cl.forEach((l,i)=>b+=`<div class="row" style="border-color:#e5e8ec"><span class="chip" style="background:${l.c}">${l.id}</span><div><b>${l.nm}</b><br><small>${l.st.length} estaciones</small></div><span style="margin-left:auto">${B('Extender','#0ea5e9',`extendLine(${i})`)}</span></div>`)}
+return{c:'#14b8a6',t:'Construir línea propia',s:'Crea tu línea y que el juego no se estanque',b}}
+function startBuild(l,last){closeM();BM={l,last};centerOn(last||Object.keys(S.own)[0],V.k<.5?.5:V.k);toast('🛠️ Modo construcción: toca el mapa.','',4000)}
+function newLine(){if(S.cl.length>=5){toast('Máximo 5 líneas propias.','bad',3000);return}
+const nm=(prompt('Nombre de tu línea:','Línea '+(S.cl.length+1))||'').trim().slice(0,14);if(!nm)return;
+let k=S.cl.length+1;while(S.cl.some(l=>l.id==='X'+k))k++;const l={id:'X'+k,nm,c:CPAL[S.cl.length%CPAL.length],st:[]};S.cl.push(l);startBuild(l,null)}
+function extendLine(i){const l=S.cl[i];if(l.st.length>=25){toast('Esa línea ya tiene 25 estaciones.','bad',3000);return}startBuild(l,l.st[l.st.length-1].n)}
+function addNode(nd){cInject(BM.l,nd);BM.l.st.push(nd);if(S.own[nd.n]===undefined)S.own[nd.n]=0;startTrains(nd.n);BM.last=nd.n;SFX.buy();render();hud()}
+function buildClick(e){const g=e.target.closest('.st');
+if(g){const n=IDX[+g.dataset.i];if(S.own[n]===undefined){toast('Solo puedes conectarte a estaciones tuyas.','bad',3000);SFX.err();return}if(BM.l.st.some(s=>s.n===n))return;const m=chkSeg(BM.last,ST[n].x,ST[n].y,n);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}addNode({n,e:1});return}
+const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k,m=chkNew(x,y);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}
+const c=cuCost();if(S.money<c){toast('No te alcanza: necesitas '+$$(c),'bad',3000);SFX.err();return}
+S.money-=c;let nm=BM.l.nm+' '+(BM.l.st.length+1);while(ST[nm])nm+="'";addNode({n:nm,x:Math.round(x),y:Math.round(y),e:0})}
+function endBuild(){if(BM.l.st.length===0)S.cl=S.cl.filter(l=>l!==BM.l);BM=null;$('gh')&&($('gh').innerHTML='');SFX.close()}
+addEventListener('pointermove',e=>{if(!BM||drag)return;const gh=$('gh');if(!gh)return;const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k,bad=chkNew(x,y),col=bad?'#ff5a52':'#22c36b';
+let h=`<circle cx="${x}" cy="${y}" r="90" fill="${col}" opacity=".12" stroke="${col}" stroke-dasharray="8 6" stroke-width="3"/><circle cx="${x}" cy="${y}" r="9" fill="${col}"/>`;
+if(BM.last)h+=`<line x1="${ST[BM.last].x}" y1="${ST[BM.last].y}" x2="${x}" y2="${y}" stroke="${BM.l.c}" stroke-width="8" opacity=".5" stroke-linecap="round"/>`;gh.innerHTML=h});
 // ---------- Tutorial ----------
 const TUT=[["elige tu estación inicial: tócala en el mapa o búscala arriba a la izquierda.",()=>S.start],["compra una estación vecina (las de borde dorado).",()=>nOwn()>=2],["mejora una estación: tócala y pulsa «Mejorar».",()=>Object.values(S.own).some(l=>l>=1)],["abre 🚇 Trenes y compra un tren extra.",()=>S.stat.trains>=1],["compra un lugar de interés: los íconos grises del mapa, tocando su estación.",()=>nPl()>=1],["abre 🛍️ Tienda y compra tu primera mejora.",()=>S.stat.ups>=1],["completa una línea entera para ganar +20% en ella. ¡Y renace cuando llegues a la meta!",()=>Object.keys(S.lineDone).length>0||S.rb>0]];
 function skipTut(){S.tutDone=true;SFX.click()}
@@ -186,15 +246,16 @@ function hud(){const c=calc(),h=happy();$('mM').textContent=$$(S.money);$('mI').
 $('sE').textContent=$$(S.earned);$('sP').textContent=Math.floor(S.pass).toLocaleString('es-CL');$('sH').textContent='🙂 '+h+'%';$('sHb').style.width=h+'%';$('sR').textContent=S.rb+' · 💠'+S.tok;
 const t=S.tutDone?'':`📘 <b>Tutorial ${Math.min(S.tut+1,TUT.length)}/${TUT.length}</b> — ${TUT[Math.min(S.tut,TUT.length-1)][0]} <button class="sk" onclick="skipTut()">Saltar</button>`;
 if(t!==tipC){tipC=t;$('tip').innerHTML=t;$('tip').style.display=t?'block':'none'}
+const bt=BM?`🛠️ Construyendo <b>${BM.l.nm}</b> · próxima estación ${$$(cuCost())} <button class="sk" onclick="endBuild()">✅ Terminar</button>`:'';if(bt!==bmC){bmC=bt;$('bmb').innerHTML=bt;$('bmb').style.display=bt?'block':'none'}
 $('rbp').textContent='🔁 Renacer '+Math.min(100,Math.floor(S.money/rbReq()*100))+'%';
 const eb=$('evb');if(S.ev){const e=EVS[S.ev.id],left=Math.max(0,(S.ev.end-Date.now())/1000);eb.style.display='block';eb.className='panel '+(e.neg?'bad':'good');eb.innerHTML=`${e.e} <b>${e.n}</b> · ${Math.ceil(left)}s<div class="bar"><i style="width:${left*1000/S.ev.tot*100}%"></i></div>`}else eb.style.display='none';
 document.querySelectorAll('[data-cost]').forEach(b=>b.disabled=S.money<+b.dataset.cost)}
 let last=Date.now(),sv=0;
 setInterval(()=>{const now=Date.now(),dt=Math.min(5,(now-last)/1000);last=now;
-if(S.start){const c=calc();S.money+=c.inc*dt;S.earned+=c.inc*dt;S.pass+=c.pass*dt;S.cond=Math.max(0,S.cond-.02*(1-.12*ul('mant'))*dt);evTick(now);newsTick(now);checkLines();checkAch()}
+if(S.start){const c=calc();S.money+=c.inc*dt;S.earned+=c.inc*dt;S.pass+=c.pass*dt;S.cond=Math.max(0,S.cond-.02*(1-.12*ul('mant'))*dt);if(!S.bu&&S.money>=1e6){S.bu=true;toast('🛠️ <b>¡Ya puedes construir tu propia línea!</b><br><small>Abre 🛠️ Construir</small>','good',9000);SFX.ach()}evTick(now);newsTick(now);checkLines();checkAch()}
 tutTick();hud();if((sv+=dt)>5){sv=0;S.t=now;localStorage.setItem('metroSt2',JSON.stringify(S))}},250);
 addEventListener('beforeunload',()=>{S.t=Date.now();localStorage.setItem('metroSt2',JSON.stringify(S))});
-render();if(S.start){centerOn(Object.keys(S.own)[0],.8);const away=Math.min(7200,(Date.now()-(S.t||Date.now()))/1000);
+rebuildCustom();render();if(S.start){centerOn(Object.keys(S.own)[0],.8);const away=Math.min(7200,(Date.now()-(S.t||Date.now()))/1000);
 if(away>60){const g=calc().inc*away*.5;S.money+=g;S.earned+=g;setTimeout(()=>toast(`😴 Mientras no estabas ganaste ${$$(g)} (50% por ${Math.round(away/60)} min).`,'good',9000),700)}}
 else centerOn('Universidad de Chile',.4);
 requestAnimationFrame(loop);hud();
