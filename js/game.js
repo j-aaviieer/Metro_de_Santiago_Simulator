@@ -93,21 +93,59 @@ for(const n in S.own){const s=ST[n];let sr=0,c=0,lm=1;s.ls.forEach(l=>{if(S.trai
 const e=evM(),np=nPl(),hm=.5+happy()/200,pb=1+.03*np,glob=(1+.1*ul('pas'))*(1+.75*S.rb)*(1+.1*fl('inc'))*(1+.01*nAch())*e.inc,tour=np*12*(1+.15*ul('tur'))*e.tour;
 return{inc:(base*(1+.12*ul('est'))*pb*hm+tour)*glob,pass:pp*hm*glob,np,tour:tour*glob}}
 // ---------- Mapa ----------
-function placeFootprint(type,x,y){
-if(type!=='parque-la-bandera')return '';
-// Trazado simplificado del plano de Parquemet: parque longitudinal al sur de Vespucio,
-// con dos paños verdes, paseo interior y equipamiento en el extremo oriental.
-return `<g transform="translate(${x} ${y}) rotate(-10.4)">
-<path d="M-258 -48 L-224 -56 -160 -54 -116 -47 -65 -49 -18 -42 38 -39 92 -31 145 -25 202 -16 250 -6 257 28 226 43 176 39 129 33 76 28 22 24 -34 19 -91 17 -145 12 -198 7 -245 -1Z" fill="#b8e9c8" stroke="#78c99b" stroke-width="3" stroke-linejoin="round"/>
-<path d="M-258 -48 L-224 -56 -160 -54 -116 -47 -65 -49 -18 -42 38 -39 92 -31 145 -25 202 -16 250 -6 L246 8 198 1 146 -5 91 -11 38 -18 -18 -21 -66 -28 -117 -27 -162 -34 -222 -34 -254 -29Z" fill="#c9efd5" opacity=".95"/>
-<path d="M-246 1 L-198 7 -145 12 -91 17 -34 19 22 24 76 28 129 33 176 39 226 43" fill="none" stroke="#91d7ae" stroke-width="5"/>
-<path d="M-185 -51 L-190 4 M-74 -47 L-79 16 M39 -39 L34 25 M147 -25 L141 34 M207 -17 L201 39" fill="none" stroke="#91d7ae" stroke-width="3"/>
-<path d="M88 -31 L91 19 143 25 146 -22 M151 -23 L154 27 199 33 202 -16" fill="none" stroke="#83c99f" stroke-width="2.5"/>
-<path d="M-228 -35 L-221 -4  -196 0 -192 -31 M-111 -29 L-105 12 -78 15 -75 -28" fill="none" stroke="#83c99f" stroke-width="2.5"/>
-<path d="M-36 -20 Q-8 -12 18 -9 T73 1 T126 11" fill="none" stroke="#f2f5d7" stroke-width="5" stroke-linecap="round"/>
-<rect x="160" y="-8" width="31" height="17" rx="2" fill="#a6d9ec" stroke="#6da9c2" stroke-width="2"/>
-<rect x="197" y="1" width="27" height="16" rx="2" fill="#a6d9ec" stroke="#6da9c2" stroke-width="2"/>
-</g>`
+// Contornos propios para los 34 lugares. El icono usa el centro de la misma geometría.
+const PLACE_SHAPES={
+"San Ramón":[72,108,"park","M-258 -48 -224 -56 -160 -54 -116 -47 -65 -49 -18 -42 38 -39 92 -31 145 -25 202 -16 250 -6 257 28 226 43 176 39 129 33 76 28 22 24 -34 19 -91 17 -145 12 -198 7 -245 -1Z"],
+"La Cisterna":[38,48,"terminal","M-78 -43 55 -43 78 -20 72 39 -62 43 -80 20Z"],
+"La Moneda":[-22,42,"civic","M-76 -43 76 -43 76 43 -76 43Z"],
+"Universidad de Chile":[28,52,"civic","M-68 -48 60 -48 75 -28 68 44 -68 44Z"],
+"Santa Lucía":[-24,30,"hill","M-92 20 -78 -26 -42 -53 0 -62 48 -43 86 -4 73 40 22 55 -46 49Z"],
+"Plaza de Armas":[22,28,"plaza","M-72 -52 66 -52 72 48 -68 52Z"],
+"Bellas Artes":[12,42,"museum","M-76 -45 65 -45 76 -30 69 44 -70 44Z"],
+"Baquedano":[0,38,"plaza","M-84 -35 -48 -62 35 -55 82 -14 65 44 0 60 -72 28Z"],
+"Los Leones":[38,50,"tower","M-78 -48 68 -48 82 -31 75 47 -72 47Z"],
+"Quinta Normal":[28,52,"park","M-108 -57 -55 -67 22 -59 91 -40 105 15 72 60 3 67 -78 49 -111 7Z"],
+"Rondizzoni":[-38,60,"race","M-105 -62 Q0 -88 105 -54 L113 45 Q0 82 -112 43Z"],
+"Cementerio":[42,44,"cemetery","M-94 -58 75 -56 101 -20 84 53 -78 59 -102 15Z"],
+"Universidad de Santiago":[26,40,"campus","M-92 -50 78 -55 96 -20 75 54 -84 48Z"],
+"Universidad Católica":[38,42,"neighborhood","M-82 -53 67 -52 88 -18 73 51 -72 55 -91 14Z"],
+"Estadio Nacional":[20,45,"stadium","M-112 -70 Q0 -91 112 -65 L121 57 Q0 88 -121 54Z"],
+"Los Dominicos":[48,40,"market","M-72 -48 65 -48 78 -23 68 48 -72 43Z"],
+"Plaza de Puente Alto":[42,48,"mall","M-84 -48 76 -48 86 35 56 52 -74 44Z"],
+"Parque Bustamante":[34,46,"parkline","M-48 -102 38 -106 52 101 -38 107Z"],
+"Estación Central":[28,42,"station","M-90 -48 88 -48 88 48 -90 48Z"],
+"Escuela Militar":[38,48,"park","M-94 -48 -35 -61 55 -48 91 -5 69 52 -49 59 -95 17Z"],
+"Parque O'Higgins":[0,0,"amusement","M-92 -58 -35 -70 49 -62 91 -28 83 47 28 65 -63 54 -99 12Z"],
+"Plaza de Maipú":[34,42,"civic","M-77 -48 70 -48 77 39 43 53 -70 43Z"],
+"Cerrillos":[35,45,"park","M-98 -49 -30 -63 70 -47 99 -7 67 54 -64 49 -102 12Z"],
+"Pedro de Valdivia":[38,42,"civic","M-70 -43 70 -43 70 43 -70 43Z"],
+"Ñuñoa":[40,44,"civic","M-68 -45 68 -45 76 -25 68 45 -68 45Z"],
+"San Miguel":[40,42,"civic","M-70 -46 70 -46 78 -22 70 46 -70 46Z"],
+"Bellavista de La Florida":[38,45,"civic","M-72 -45 65 -45 78 -25 68 46 -70 46Z"],
+"Cumming":[30,40,"neighborhood","M-88 -50 75 -50 91 -18 74 51 -78 48 -95 12Z"],
+"Salvador":[35,44,"neighborhood","M-83 -49 75 -48 88 -15 71 52 -74 49 -91 10Z"],
+"El Golf":[42,40,"civic","M-77 -48 76 -48 83 -20 71 48 -75 48Z"],
+"Patronato":[35,42,"neighborhood","M-86 -49 78 -48 91 -12 72 50 -76 50 -94 12Z"],
+"Franklin":[35,45,"market","M-103 -56 83 -54 105 -20 88 55 -91 53 -109 12Z"],
+"Plaza Egaña":[35,44,"mall","M-83 -48 78 -48 88 -14 73 50 -77 48Z"],
+"Los Héroes":[32,44,"civic","M-93 -49 90 -49 96 42 -90 45Z"]
+};
+function placeFootprint(n,x,y){
+const p=PLACE_SHAPES[n];if(!p)return '';
+const [dx,dy,type,d]=p;
+const green=["park","hill","parkline"].includes(type),warm=["amusement","race","stadium"].includes(type),urban=["neighborhood","market"].includes(type);
+const fill=green?"#b9e8c8":warm?"#d7e8c9":urban?"#e9e1d3":"#e2e8ec";
+let detail="";
+if(type==="park"||type==="parkline"||type==="hill")detail='<path d="M-75 -20Q-25 -5 0 0T72 25M-20 -45L-10 35M42 -35L30 40" fill="none" stroke="#f4f0d7" stroke-width="5" stroke-linecap="round"/><circle cx="-45" cy="10" r="7" fill="#82c69a"/><circle cx="45" cy="-10" r="8" fill="#82c69a"/>';
+else if(type==="race"||type==="stadium")detail='<ellipse rx="78" ry="43" fill="#dce9d2" stroke="#a5c49b" stroke-width="7"/><ellipse rx="48" ry="23" fill="#9dce9d" stroke="#83b886" stroke-width="2"/>';
+else if(type==="amusement")detail='<path d="M-70 -25L-25 -4 10 -35 58 -10 68 27M-60 34L-18 8 22 39 58 18" fill="none" stroke="#f7f2d9" stroke-width="5"/><circle cx="-35" cy="-18" r="17" fill="#f3a69e" stroke="#ce817b" stroke-width="3"/><circle cx="32" cy="-25" r="14" fill="#9dc8e7" stroke="#6c9dbb" stroke-width="3"/><circle cx="20" cy="28" r="12" fill="#f3c77e" stroke="#c99a51" stroke-width="3"/>';
+else if(type==="neighborhood"||type==="market"||type==="campus")detail='<g fill="#c4cdd2" stroke="#8e9ca4" stroke-width="2"><rect x="-70" y="-32" width="38" height="23"/><rect x="-17" y="-34" width="40" height="24"/><rect x="37" y="-29" width="34" height="21"/><rect x="-52" y="12" width="43" height="24"/><rect x="10" y="12" width="54" height="25"/></g><path d="M-85 0H84M0 -45V43" stroke="#fff" stroke-width="7"/>';
+else if(type==="civic"||type==="museum"||type==="station"||type==="terminal")detail='<path d="M-62 -25L0 -43 62 -25V-14H-62Z" fill="#aebbc3" stroke="#8998a1" stroke-width="2"/><path d="M-45 -8V29M-15 -8V29M15 -8V29M45 -8V29M-65 32H65" stroke="#8d9ba3" stroke-width="3"/>';
+else if(type==="plaza")detail='<path d="M-60 0H60M0 -40V40" stroke="#fff" stroke-width="6"/><circle r="17" fill="#b8cbd0" stroke="#849ca4" stroke-width="3"/>';
+else if(type==="tower"||type==="mall")detail='<g fill="#b9c7ce" stroke="#899ba3" stroke-width="2"><rect x="-48" y="-30" width="42" height="58"/><rect x="10" y="-35" width="43" height="63"/></g><path d="M-40 -18H-14M18 -22H45M-40 -3H-14M18 -7H45" stroke="#fff" stroke-width="3"/>';
+else if(type==="cemetery")detail='<path d="M-75 -35L75 35M-75 35L75 -35M-30 -45L-22 45M35 -45L40 45" stroke="#f5f2df" stroke-width="4"/>';
+else detail='<g fill="#c3cdd2" stroke="#8b9ba3" stroke-width="2"><rect x="-55" y="-25" width="45" height="48"/><rect x="12" y="-25" width="45" height="48"/></g>';
+return `<g class="place-area ${type}" transform="translate(${x} ${y})"><path d="${d}" fill="${fill}" stroke="${green?"#78c99b":"#9cabb1"}" stroke-width="3" stroke-linejoin="round"/>${detail}</g>`;
 }
 function render(){let h='',hs='';
 for(const k in LINES){const L=LINES[k],a=L.st;for(let i=1;i<a.length;i++){const p=a[i-1],q=a[i],op=S.own[p]!==undefined,oq=S.own[q]!==undefined;
@@ -115,10 +153,10 @@ if(S.start&&!(op||oq))continue;if(!vis(p)||!vis(q))continue;const on=op&&oq,A=ST
 h+=`<line x1="${A.x}" y1="${A.y}" x2="${B_.x}" y2="${B_.y}" stroke="${L.c}" stroke-width="${on?10:7}" stroke-linecap="round" opacity="${on?1:.3}"/>`}}
 IDX.forEach((n,i)=>{if(!vis(n))return;const s=ST[n],o=S.own[n]!==undefined,b=canBuy(n),tr=s.ls.length>1,r=tr?12:8,p=PL[n];
 h+=`<g class="st" data-i="${i}"><circle class="hit" cx="${s.x}" cy="${s.y}" r="${hitR()}" fill="transparent"/>`;
-if(p&&S.start){const got=S.place[n],dx=hash(n)%2?-48:48,dy=-48;
-if(got&&p[0]==='Parque La Bandera')h+=placeFootprint('parque-la-bandera',s.x+72,s.y+108);
-h+=`<line x1="${s.x}" y1="${s.y}" x2="${s.x+dx}" y2="${s.y+dy}" stroke="#9aa5b1" stroke-width="3" stroke-dasharray="5 5" opacity=".6"/>${S.shadows?`<ellipse cx="${s.x+dx}" cy="${s.y+dy+24}" rx="22" ry="8" fill="#000" opacity=".16"/>`:''}<g class="pl ${got?'got':''}" transform="translate(${s.x+dx} ${s.y+dy})"><g class="bb"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g></g>`;
-if(got)h+=`<g transform="translate(${s.x+dx} ${s.y+dy+42})"><text class="lb k bb" x="0" y="0">${p[0]}</text></g>`}
+if(p&&S.start){const got=!!S.place[n],shape=PLACE_SHAPES[n],dx=shape?shape[0]:0,dy=shape?shape[1]:-48,px=s.x+dx,py=s.y+dy;
+if(got&&shape)h+=placeFootprint(n,px,py);
+h+=`${got&&S.shadows?`<ellipse cx="${px}" cy="${py+18}" rx="25" ry="8" fill="#000" opacity=".13"/>`:''}<g class="pl ${got?'got':''}" transform="translate(${px} ${py})"><g class="bb"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g></g>`;
+if(got)h+=`<g transform="translate(${px} ${py+78})"><text class="lb k bb" x="0" y="0">${p[0]}</text></g>`}
 h+=`${S.shadows?`<ellipse cx="${s.x}" cy="${s.y+4}" rx="${r+1}" ry="${r*.7}" fill="#000" opacity=".18"/>`:''}`;
 h+=`<circle class="${b?'pulse':''}" cx="${s.x}" cy="${s.y}" r="${r}" fill="#fff" stroke="${o?'#222':b?'#f5a300':'#aab4bc'}" stroke-width="3"/>`;
 if(tr)s.ls.forEach((l,j)=>h+=`<circle cx="${s.x+(j-(s.ls.length-1)/2)*7}" cy="${s.y}" r="3" fill="${LINES[l].c}"/>`);
