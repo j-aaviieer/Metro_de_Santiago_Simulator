@@ -93,6 +93,13 @@ for(const n in S.own){const s=ST[n];let sr=0,c=0,lm=1;s.ls.forEach(l=>{if(S.trai
 const e=evM(),np=nPl(),hm=.5+happy()/200,pb=1+.03*np,glob=(1+.1*ul('pas'))*(1+.75*S.rb)*(1+.1*fl('inc'))*(1+.01*nAch())*e.inc,tour=np*12*(1+.15*ul('tur'))*e.tour;
 return{inc:(base*(1+.12*ul('est'))*pb*hm+tour)*glob,pass:pp*hm*glob,np,tour:tour*glob}}
 // ---------- Mapa ----------
+function placeFootprint(type,x,y){
+const common='stroke-linejoin="round" stroke-width="3"';
+if(type==='park')return `<g transform="translate(${x} ${y})"><path d="M-68 8 L-55 -30 -20 -43 8 -34 39 -45 68 -12 59 25 25 39 -18 34 -57 25Z" fill="#8bd18b" stroke="#389b58" ${common}/><path d="M-48 -5 Q-18 -24 8 -7 T49 -12 M-38 19 Q-8 1 27 19" fill="none" stroke="#d9f3b9" stroke-width="5" stroke-linecap="round"/><g fill="#248d43" stroke="#176b35" stroke-width="2"><circle cx="-34" cy="-13" r="9"/><circle cx="-7" cy="-24" r="10"/><circle cx="27" cy="-17" r="9"/><circle cx="39" cy="13" r="8"/><circle cx="-22" cy="18" r="8"/></g></g>`;
+if(type==='civic')return `<g transform="translate(${x} ${y})"><rect x="-57" y="-32" width="114" height="65" rx="5" fill="#e8d7b4" stroke="#9b7950" ${common}/><path d="M-65 -32 L0 -55 65 -32Z" fill="#c94e3d" stroke="#91382e" ${common}/><rect x="-14" y="-51" width="28" height="18" fill="#f7e8c9" stroke="#9b7950" stroke-width="2"/><g fill="#fff8e8" stroke="#9b7950" stroke-width="2"><rect x="-42" y="-20" width="12" height="30"/><rect x="-18" y="-20" width="12" height="30"/><rect x="6" y="-20" width="12" height="30"/><rect x="30" y="-20" width="12" height="30"/></g><rect x="-10" y="12" width="20" height="21" fill="#9a6842"/></g>`;
+if(type==='neighborhood')return `<g transform="translate(${x} ${y})"><path d="M-72 22 L-60 -23 -24 -36 3 -24 34 -39 70 -13 60 30Z" fill="#d9dfe4" stroke="#8996a1" ${common}/><g stroke="#7d8994" stroke-width="2"><path d="M-56 -4 L-37 -25 -18 -4Z" fill="#d47c58"/><rect x="-54" y="-4" width="35" height="29" fill="#f2d5a9"/><path d="M-11 -9 L10 -31 31 -9Z" fill="#b86d55"/><rect x="-9" y="-9" width="40" height="34" fill="#f4e0bc"/><path d="M31 -2 L48 -20 64 -2Z" fill="#8d9db1"/><rect x="32" y="-2" width="30" height="27" fill="#d8e4ef"/></g><g fill="#8bb7d1"><rect x="-45" y="4" width="7" height="8"/><rect x="-29" y="4" width="7" height="8"/><rect x="0" y="0" width="8" height="9"/><rect x="16" y="0" width="8" height="9"/><rect x="42" y="7" width="7" height="8"/></g></g>`;
+return `<g transform="translate(${x} ${y})"><rect x="-61" y="-32" width="122" height="64" rx="13" fill="#d9e8ef" stroke="#8ca9b8" stroke-width="3"/><path d="M-48 15 L-25 -15 0 12 24 -14 49 15" fill="none" stroke="#fff" stroke-width="5"/></g>`
+}
 function render(){let h='',hs='';
 for(const k in LINES){const L=LINES[k],a=L.st;for(let i=1;i<a.length;i++){const p=a[i-1],q=a[i],op=S.own[p]!==undefined,oq=S.own[q]!==undefined;
 if(S.start&&!(op||oq))continue;if(!vis(p)||!vis(q))continue;const on=op&&oq,A=ST[p],B_=ST[q];if(S.shadows&&on)hs+=`<line x1="${A.x}" y1="${A.y+5}" x2="${B_.x}" y2="${B_.y+5}" stroke="#1d2433" stroke-opacity=".18" stroke-width="12" stroke-linecap="round"/>`;
@@ -100,6 +107,7 @@ h+=`<line x1="${A.x}" y1="${A.y}" x2="${B_.x}" y2="${B_.y}" stroke="${L.c}" stro
 IDX.forEach((n,i)=>{if(!vis(n))return;const s=ST[n],o=S.own[n]!==undefined,b=canBuy(n),tr=s.ls.length>1,r=tr?12:8,p=PL[n];
 h+=`<g class="st" data-i="${i}"><circle class="hit" cx="${s.x}" cy="${s.y}" r="${hitR()}" fill="transparent"/>`;
 if(p&&S.start){const got=S.place[n],dx=hash(n)%2?-48:48,dy=-48;
+if(got)h+=placeFootprint(p[2]||'landmark',s.x+dx+35,s.y+dy+12);
 h+=`<line x1="${s.x}" y1="${s.y}" x2="${s.x+dx}" y2="${s.y+dy}" stroke="#9aa5b1" stroke-width="3" stroke-dasharray="5 5" opacity=".6"/>${S.shadows?`<ellipse cx="${s.x+dx}" cy="${s.y+dy+24}" rx="22" ry="8" fill="#000" opacity=".16"/>`:''}<g class="pl ${got?'got':''}" transform="translate(${s.x+dx} ${s.y+dy})"><g class="bb"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g></g>`;
 if(got)h+=`<g transform="translate(${s.x+dx} ${s.y+dy+42})"><text class="lb k bb" x="0" y="0">${p[0]}</text></g>`}
 h+=`${S.shadows?`<ellipse cx="${s.x}" cy="${s.y+4}" rx="${r+1}" ry="${r*.7}" fill="#000" opacity=".18"/>`:''}`;
