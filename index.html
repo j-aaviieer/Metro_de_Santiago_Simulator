@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#eef3f6"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Metro Santiago">
 <title>Metro de Santiago Tycoon</title><link rel="stylesheet" href="css/style.css"></head><body>
-<svg id="map"><g id="w"></g></svg>
+<div id="stage"><svg id="map"><g id="w"></g></svg></div>
 <div class="panel" id="tip"></div>
 <div class="panel" id="srch"><input id="sb" list="dl" placeholder="🔎 Buscar estación"><datalist id="dl"></datalist></div>
 <div id="toasts"></div><div class="panel" id="bmb"></div><div class="panel" id="evb"></div>
-<div class="panel" id="rbp" onclick="show(mRebirth)"></div>
+<div class="panel" id="rbp" onclick="show(mRebirth)"><i class="kb">8</i></div>
 <div class="panel" id="stats">
 <div><span>📈 Ganado</span><span id="sE"></span></div><div><span>👥 Pasajeros</span><span id="sP"></span></div>
 <div><span>🙂 Felicidad</span><span id="sH"></span></div><div class="bar"><i id="sHb"></i></div>
 <div><span>🔁 Renacimientos</span><span id="sR"></span></div></div>
 <div class="panel" id="money"><div id="coin">$</div><div><big id="mM"></big><small id="mI"></small></div></div>
 <div class="panel" id="menu">
-<button class="mb" style="--c:#3b82f6" onclick="show(mLines)"><span>🗺️</span>Líneas</button>
-<button class="mb" style="--c:#22c36b" onclick="show(mTrains)"><span>🚇</span>Trenes</button>
-<button class="mb" style="--c:#0ea5e9" onclick="show(mShop)"><span>🛍️</span>Tienda</button>
-<button class="mb" style="--c:#f0a30f" onclick="show(mPlaces)"><span>🏛️</span>Lugares</button>
-<button class="mb" style="--c:#f59e0b" onclick="show(mAch)"><span>🏆</span>Logros</button>
-<button class="mb" style="--c:#14b8a6" onclick="show(mBuild)"><span>🛠️</span>Construir</button>
-<button class="mb" style="--c:#e8467c" onclick="show(mMusic)"><span>🎵</span>Música</button>
+<button class="mb" style="--c:#3b82f6" onclick="show(mLines)"><i class="kb">1</i><span>🗺️</span>Líneas</button>
+<button class="mb" style="--c:#22c36b" onclick="show(mTrains)"><i class="kb">2</i><span>🚇</span>Trenes</button>
+<button class="mb" style="--c:#0ea5e9" onclick="show(mShop)"><i class="kb">3</i><span>🛍️</span>Tienda</button>
+<button class="mb" style="--c:#f0a30f" onclick="show(mPlaces)"><i class="kb">4</i><span>🏛️</span>Lugares</button>
+<button class="mb" style="--c:#f59e0b" onclick="show(mAch)"><i class="kb">5</i><span>🏆</span>Logros</button>
+<button class="mb" style="--c:#14b8a6" onclick="show(mBuild)"><i class="kb">6</i><span>🛠️</span>Construir</button>
+<button class="mb" style="--c:#e8467c" onclick="show(mMusic)"><i class="kb">7</i><span>🎵</span>Música</button>
 <button class="mb" style="--c:#7c4dff" onclick="show(mRebirth)"><span>🔁</span>Renacer</button>
-<button class="mb" style="--c:#8b95a1" onclick="show(mSet)"><span>⚙️</span>Ajustes</button></div>
-<div class="panel" id="zoom"><button onclick="zoom(1.25)">+</button><button onclick="zoom(.8)">−</button></div>
+<button class="mb" style="--c:#8b95a1" onclick="show(mSet)"><i class="kb">9</i><span>⚙️</span>Ajustes</button></div>
+<div class="panel" id="zoom"><button title="Girar a la izquierda" onclick="rot(-15)">⟲</button><button title="Girar a la derecha" onclick="rot(15)">⟳</button><button title="Inclinar más" onclick="tilt(8)">⇧</button><button title="Inclinar menos" onclick="tilt(-8)">⇩</button><button onclick="zoom(1.25)">+</button><button onclick="zoom(.8)">−</button></div>
 <div id="nw"><div class="nc" id="ncard"><div class="nhd">📰 SANTIAGO HOY · ÚLTIMA HORA</div><div id="nimg"></div><h2 id="nh"></h2><p id="nt"></p><div class="nbt"><button class="btn" id="nclaim" style="--c:#f0a30f" onclick="claimNews()"></button><button class="btn" style="--c:#8b95a1" onclick="closeNews()">✕ Cerrar</button></div></div></div>
 <div id="ov" onclick="if(event.target==this)closeM()"><div id="md"></div></div>
 <script src="music/playlist.js"></script><script src="js/data.js"></script><script src="js/audio.js"></script><script src="js/game.js"></script>

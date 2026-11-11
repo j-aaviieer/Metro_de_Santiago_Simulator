@@ -89,3 +89,12 @@ body{height:100vh;height:100dvh}
 .nc{padding:16px}.nc h2{font-size:21px}.nc p{font-size:14px}#nimg{height:96px}
 }
 @media(max-height:520px){#md{max-height:96vh;max-height:96dvh}.mh{padding:8px 14px}.mh h2{font-size:18px}.sub{display:none}#stats div:nth-child(3),#stats .bar{display:none}#tip{font-size:10px}}
+
+/* ---------- Vista 3D ---------- */
+#stage{position:absolute;inset:0;overflow:hidden}
+#stage.d3{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 24%);mask-image:linear-gradient(to bottom,transparent 0,#000 24%)}
+#map{will-change:transform}.bb{transform:rotate(var(--ry,0deg)) scaleY(var(--sy,1));transform-origin:0 0}
+#zoom button{font-size:20px}
+
+.mb{position:relative}.kb{position:absolute;top:3px;left:6px;font-size:10px;font-style:normal;font-weight:900;opacity:.9;display:none}
+@media(hover:hover) and (pointer:fine){.kb{display:block}}

@@ -4,7 +4,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 // ---------- Estado ----------
 const fresh=()=>({money:700,earned:0,pass:0,own:{},place:{},trains:{},cond:100,rb:0,start:false,up:{},fu:{},tok:0,lineDone:{},ach:{},
-stat:{trains:0,ups:0,ev:0,evNeg:0,roja:0,music:0},tut:0,tutDone:false,ev:null,nextEv:0,t:0,cl:[],bu:false,newsMode:'full'});
+stat:{trains:0,ups:0,ev:0,evNeg:0,roja:0,music:0},tut:0,tutDone:false,ev:null,nextEv:0,t:0,cl:[],bu:false,newsMode:'full',view3d:true,tilt:45,shadows:true,yaw:0});
 let S=fresh();try{const o=JSON.parse(localStorage.getItem('metroSt2')||'{}');Object.assign(S,o);S.stat=Object.assign(fresh().stat,o.stat||{})}catch(e){}
 // ---------- Mejoras (dinero: se pierden al renacer) y fichas (permanentes) ----------
 const UP={pas:{n:'Difusión y tarifas',e:'👥',d:'+10% pasajeros e ingresos por nivel',max:10,base:4000,g:2.1},
@@ -56,7 +56,7 @@ const GIFTS=[{i:'coin',h:'Turista dona su billete de lotería',t:'Un turista olv
 {i:'🐶',h:'Un perro quiltro viaja solo',t:'Un perrito paseó por tu línea y se hizo famoso: ¡todos quieren fotografiarlo y dejan donaciones!'},
 {i:'coin',h:'Récord de recaudación',t:'Las máquinas de pasajes registraron su mejor jornada del año. Hay un bono para ti.'},
 {i:'🚇',h:'Todos los trenes llegaron a tiempo',t:'Puntualidad perfecta hoy. La empresa reparte un bono por buen servicio.'}];
-const TIPS=["Repara tus trenes seguido para mantener alta la felicidad.","Completa una línea entera y gana +20% en toda ella.","Las fichas de renacer dan mejoras permanentes en 🛍️ Tienda.","El Plan de emergencia reduce el daño de temporales y golpes.","Con CL$1M puedes construir tu propia línea en 🛠️ Construir."];
+const TIPS=["Repara tus trenes seguido para mantener alta la felicidad.","Completa una línea entera y gana +20% en toda ella.","Las fichas de renacer dan mejoras permanentes en 🛍️ Tienda.","El Plan de emergencia reduce el daño de temporales y golpes.","Con CL$1M puedes construir tu propia línea en 🛠️ Construir.","Mueve la cámara con WASD, gira el mapa con Q y E, inclina con R y F."];
 let nextNews=0,NG=0;
 function toast(t,cls='',ms=6000,fn){const c=$('toasts'),e=document.createElement('div');e.className='toast '+cls;e.innerHTML=t;c.prepend(e);const rm=()=>{e.classList.add('out');setTimeout(()=>e.remove(),300)};e.onclick=()=>{if(fn)fn();rm()};setTimeout(rm,ms);while(c.children.length>4)c.lastChild.remove()}
 function pushNews(n,gift){const g=gift?Math.floor(calc().inc*30):0;
@@ -93,19 +93,20 @@ for(const n in S.own){const s=ST[n];let sr=0,c=0,lm=1;s.ls.forEach(l=>{if(S.trai
 const e=evM(),np=nPl(),hm=.5+happy()/200,pb=1+.03*np,glob=(1+.1*ul('pas'))*(1+.75*S.rb)*(1+.1*fl('inc'))*(1+.01*nAch())*e.inc,tour=np*12*(1+.15*ul('tur'))*e.tour;
 return{inc:(base*(1+.12*ul('est'))*pb*hm+tour)*glob,pass:pp*hm*glob,np,tour:tour*glob}}
 // ---------- Mapa ----------
-function render(){let h='';
+function render(){let h='',hs='';
 for(const k in LINES){const L=LINES[k],a=L.st;for(let i=1;i<a.length;i++){const p=a[i-1],q=a[i],op=S.own[p]!==undefined,oq=S.own[q]!==undefined;
-if(S.start&&!(op||oq))continue;if(!vis(p)||!vis(q))continue;const on=op&&oq,A=ST[p],B_=ST[q];
+if(S.start&&!(op||oq))continue;if(!vis(p)||!vis(q))continue;const on=op&&oq,A=ST[p],B_=ST[q];if(S.shadows&&on)hs+=`<line x1="${A.x}" y1="${A.y+5}" x2="${B_.x}" y2="${B_.y+5}" stroke="#1d2433" stroke-opacity=".18" stroke-width="12" stroke-linecap="round"/>`;
 h+=`<line x1="${A.x}" y1="${A.y}" x2="${B_.x}" y2="${B_.y}" stroke="${L.c}" stroke-width="${on?10:7}" stroke-linecap="round" opacity="${on?1:.3}"/>`}}
 IDX.forEach((n,i)=>{if(!vis(n))return;const s=ST[n],o=S.own[n]!==undefined,b=canBuy(n),tr=s.ls.length>1,r=tr?12:8,p=PL[n];
 h+=`<g class="st" data-i="${i}"><circle class="hit" cx="${s.x}" cy="${s.y}" r="${hitR()}" fill="transparent"/>`;
 if(p&&S.start){const got=S.place[n],dx=hash(n)%2?-48:48,dy=-48;
-h+=`<line x1="${s.x}" y1="${s.y}" x2="${s.x+dx}" y2="${s.y+dy}" stroke="#9aa5b1" stroke-width="3" stroke-dasharray="5 5" opacity=".6"/><g class="pl ${got?'got':''}" transform="translate(${s.x+dx} ${s.y+dy})"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g>`;
-if(got)h+=`<text class="lb k" x="${s.x+dx}" y="${s.y+dy+42}">${p[0]}</text>`}
+h+=`<line x1="${s.x}" y1="${s.y}" x2="${s.x+dx}" y2="${s.y+dy}" stroke="#9aa5b1" stroke-width="3" stroke-dasharray="5 5" opacity=".6"/>${S.shadows?`<ellipse cx="${s.x+dx}" cy="${s.y+dy+24}" rx="22" ry="8" fill="#000" opacity=".16"/>`:''}<g class="pl ${got?'got':''}" transform="translate(${s.x+dx} ${s.y+dy})"><g class="bb"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g></g>`;
+if(got)h+=`<g transform="translate(${s.x+dx} ${s.y+dy+42})"><text class="lb k bb" x="0" y="0">${p[0]}</text></g>`}
+h+=`${S.shadows?`<ellipse cx="${s.x}" cy="${s.y+4}" rx="${r+1}" ry="${r*.7}" fill="#000" opacity=".18"/>`:''}`;
 h+=`<circle class="${b?'pulse':''}" cx="${s.x}" cy="${s.y}" r="${r}" fill="#fff" stroke="${o?'#222':b?'#f5a300':'#aab4bc'}" stroke-width="3"/>`;
 if(tr)s.ls.forEach((l,j)=>h+=`<circle cx="${s.x+(j-(s.ls.length-1)/2)*7}" cy="${s.y}" r="3" fill="${LINES[l].c}"/>`);
-h+=`<text class="lb ${o||b?'k':''}" x="${s.x}" y="${s.y+r+18}">${n}${o?' ·'+S.own[n]:''}</text></g>`});
-h+='<g id="gh" pointer-events="none"></g><g id="tg" pointer-events="none"></g>';$('w').innerHTML=h;buildTrains();if(BM&&BM.pend)ghost(BM.pend.x,BM.pend.y)}
+h+=`<g transform="translate(${s.x} ${s.y+r+18})"><text class="lb bb ${o||b?'k':''}" x="0" y="0">${n}${o?' ·'+S.own[n]:''}</text></g></g>`});
+h+='<g id="gh" pointer-events="none"></g><g id="tg" pointer-events="none"></g>';$('w').innerHTML=hs+h;buildTrains();if(BM&&BM.pend)ghost(BM.pend.x,BM.pend.y)}
 // ---------- Trenes animados ----------
 let TR=[],lt=0;
 function buildTrains(){let h='';TR=[];
@@ -114,25 +115,62 @@ const T=Math.min(S.trains[k]||0,8);if(!runs.length)continue;
 for(let i=0;i<T;i++){const pts=runs[i%runs.length].map(n=>[ST[n].x,ST[n].y]),cum=[0];for(let j=1;j<pts.length;j++)cum.push(cum[j-1]+Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]));
 const len=cum[cum.length-1],per=Math.max(1,Math.ceil(T/runs.length));
 TR.push({pts,cum,len,u:Math.floor(i/runs.length)*(2*len/per)});
-h+=`<g><rect x="-17" y="-7" width="34" height="14" rx="6" fill="${LINES[k].c}" stroke="#fff" stroke-width="2.5"/><rect x="5" y="-4.5" width="8" height="9" rx="2" fill="#fff" opacity=".85"/><rect x="-9" y="-4.5" width="8" height="9" rx="2" fill="#fff" opacity=".55"/></g>`}}
-$('tg').innerHTML=h;TR.forEach((r,i)=>r.el=$('tg').children[i])}
-function loop(t){const dt=Math.min(.1,(t-lt)/1000||0);lt=t;const fz=frozen();
+h+=`<g><rect x="-17" y="-7" width="34" height="14" rx="6" fill="#000" opacity=".25"/></g><g><rect x="-17" y="-7" width="34" height="14" rx="6" fill="${LINES[k].c}" stroke="#fff" stroke-width="2.5"/><rect x="5" y="-4.5" width="8" height="9" rx="2" fill="#fff" opacity=".85"/><rect x="-9" y="-4.5" width="8" height="9" rx="2" fill="#fff" opacity=".55"/></g>`}}
+$('tg').innerHTML=h;TR.forEach((r,i)=>{r.sh=$('tg').children[2*i];r.el=$('tg').children[2*i+1];if(r.sh)r.sh.style.display=S.shadows?'':'none'})}
+// Atajos: 1-9 abren los botones del menú (otra vez la misma tecla lo cierra) y Esc cierra
+const MENU=[mLines,mTrains,mShop,mPlaces,mAch,mBuild,mMusic,mRebirth,mSet];
+addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&!/^(range|checkbox|button)$/.test(t.type))||t.tagName==='SELECT')||e.ctrlKey||e.metaKey||e.altKey)return;
+if(e.key==='Escape'){if($('nw').style.display==='flex')closeNews();else if(cur)closeM();else if(BM)endBuild();return}
+if(e.key.length===1&&e.key>='1'&&e.key<='9'){if($('nw').style.display==='flex')return;const f=MENU[+e.key-1];if(cur===f)closeM();else show(f);e.preventDefault()}});
+const KEYS=new Set();
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'')||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();if(('wasdqerf'.includes(k)&&k.length===1)||k.startsWith('arrow')||k==='shift'){KEYS.add(k);if(k.startsWith('arrow'))e.preventDefault()}});
+addEventListener('keyup',e=>KEYS.delete(e.key.toLowerCase()));addEventListener('blur',()=>KEYS.clear());
+function camKeys(dt){if(!KEYS.size||cur||$('nw').style.display==='flex')return;let dx=0,dy=0;
+if(KEYS.has('w')||KEYS.has('arrowup'))dy+=1;if(KEYS.has('s')||KEYS.has('arrowdown'))dy-=1;if(KEYS.has('a')||KEYS.has('arrowleft'))dx+=1;if(KEYS.has('d')||KEYS.has('arrowright'))dx-=1;
+const sp=(KEYS.has('shift')?1100:550)*dt;
+if(dx||dy){const n=Math.hypot(dx,dy),c=innerWidth/2,m=innerHeight/2,A=toLocal(c,m),B2=toLocal(c+dx/n*sp,m+dy/n*sp);V.x+=B2.x-A.x;V.y+=B2.y-A.y;ap()}
+const yw=(KEYS.has('e')?1:0)-(KEYS.has('q')?1:0),tl=(KEYS.has('r')?1:0)-(KEYS.has('f')?1:0);
+if(yw||tl)setCam(()=>{S.yaw=normYaw(S.yaw+yw*90*dt);if(tl){S.view3d=true;S.tilt=Math.max(10,Math.min(65,S.tilt+tl*40*dt))}})}
+function loop(t){const dt=Math.min(.1,(t-lt)/1000||0);lt=t;const fz=frozen();camKeys(dt);
 TR.forEach(r=>{if(!fz)r.u=(r.u+130*dt)%(2*r.len);const fw=r.u<r.len,d=fw?r.u:2*r.len-r.u;let j=1;while(j<r.cum.length-1&&r.cum[j]<d)j++;
 const a=r.pts[j-1],b=r.pts[j],f=(d-r.cum[j-1])/((r.cum[j]-r.cum[j-1])||1);let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(!fw)ang+=180;
-r.el.setAttribute('transform',`translate(${a[0]+(b[0]-a[0])*f} ${a[1]+(b[1]-a[1])*f}) rotate(${ang})`)});requestAnimationFrame(loop)}
+const x=a[0]+(b[0]-a[0])*f,y=a[1]+(b[1]-a[1])*f,lift=S.view3d?6:2;r.sh.setAttribute('transform',`translate(${x} ${y+5}) rotate(${ang})`);r.el.setAttribute('transform',`translate(${x} ${y-lift}) rotate(${ang})`)});requestAnimationFrame(loop)}
 // ---------- Zoom / pan ----------
-let V={x:0,y:0,k:.4},drag=null,moved=0;
+let V={x:0,y:0,k:.4},drag=null,moved=0,OFF={x:0,y:0};
+const PERSP=900,ORY=.5,tiltRad=()=>S.view3d?S.tilt*Math.PI/180:0,rotRad=()=>S.yaw*Math.PI/180,normYaw=y=>((y+540)%360)-180;
 const hitR=()=>Math.min(46,Math.max(22,26/V.k));
 const ap=()=>{$('w').setAttribute('transform',`translate(${V.x} ${V.y}) scale(${V.k})`);$('map').classList.toggle('zl',V.k<.7);const r=hitR();document.querySelectorAll('.hit').forEach(c=>c.setAttribute('r',r))};
-function zoom(f,cx=innerWidth/2,cy=innerHeight/2){const k=Math.min(2.5,Math.max(.15,V.k*f));f=k/V.k;V.x=cx-(cx-V.x)*f;V.y=cy-(cy-V.y)*f;V.k=k;ap()}
-function centerOn(n,k=.8){V.k=k;V.x=innerWidth/2-ST[n].x*k;V.y=innerHeight/2-ST[n].y*k;ap()}
-const PT=new Map();let pinch=null,lastPT='mouse';
-$('map').addEventListener('pointerdown',e=>{lastPT=e.pointerType;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
-if(PT.size===2){const[a,b]=[...PT.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,k:V.k};drag=null;moved=99}else{drag={x:e.clientX,y:e.clientY,vx:V.x,vy:V.y};moved=0}});
-addEventListener('pointermove',e=>{if(!PT.has(e.pointerId))return;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
-if(pinch&&PT.size===2){const[a,b]=[...PT.values()],d=Math.hypot(a.x-b.x,a.y-b.y)||1;zoom(pinch.k*d/pinch.d/V.k,(a.x+b.x)/2,(a.y+b.y)/2);return}
-if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));V.x=drag.vx+dx;V.y=drag.vy+dy;ap()});
-const pUp=e=>{PT.delete(e.pointerId);if(PT.size<2)pinch=null;if(PT.size===1){const p=[...PT.values()][0];drag={x:p.x,y:p.y,vx:V.x,vy:V.y}}else drag=null};
+// pantalla -> plano del mapa (inversa de la perspectiva CSS)
+function toLocal(cx,cy){const a=tiltRad(),r=rotRad();if(!a&&!r)return{x:cx+OFF.x,y:cy+OFF.y};
+const ox=OFF.x+innerWidth/2,oy=OFF.y+innerHeight*ORY,p=cx-innerWidth/2,q=cy-innerHeight*ORY;let u=p,v=q;
+if(a){const s=Math.sin(a),c=Math.cos(a);v=q/Math.max(.08,c+q*s/PERSP);u=p*Math.max(.05,1-v*s/PERSP)}
+const cr=Math.cos(r),sr=Math.sin(r);return{x:ox+u*cr+v*sr,y:oy-u*sr+v*cr}}
+function toWorld(cx,cy){const L=toLocal(cx,cy);return{x:(L.x-V.x)/V.k,y:(L.y-V.y)/V.k}}
+function layout(){const m=$('map'),on=S.view3d,over=on||Math.abs(S.yaw)>.01;OFF=over?{x:innerWidth/2,y:innerHeight/2}:{x:0,y:0};
+m.style.left=over?'-50%':'0';m.style.top=over?'-50%':'0';m.style.width=over?'200%':'100%';m.style.height=over?'200%':'100%';
+m.style.transformOrigin=`${OFF.x+innerWidth/2}px ${OFF.y+innerHeight*ORY}px`;
+m.style.transform=on?`perspective(${PERSP}px) rotateX(${S.tilt}deg) rotateZ(${S.yaw}deg)`:(Math.abs(S.yaw)>.01?`rotate(${S.yaw}deg)`:'none');
+$('stage').classList.toggle('d3',on);m.style.setProperty('--sy',on?Math.min(2,.9/Math.cos(tiltRad())):1);m.style.setProperty('--ry',(-S.yaw)+'deg')}
+// cambia la cámara manteniendo el mismo punto del mapa en el centro de la pantalla
+function setCam(fn){const wc=toWorld(innerWidth/2,innerHeight/2);fn();layout();const c=toLocal(innerWidth/2,innerHeight/2);V.x=c.x-wc.x*V.k;V.y=c.y-wc.y*V.k;ap()}
+function zoom(f,cx=innerWidth/2,cy=innerHeight/2){const k=Math.min(2.5,Math.max(.15,V.k*f));f=k/V.k;const L=toLocal(cx,cy);V.x=L.x-(L.x-V.x)*f;V.y=L.y-(L.y-V.y)*f;V.k=k;ap()}
+function centerOn(n,k=.8){V.k=k;const c=toLocal(innerWidth/2,innerHeight/2);V.x=c.x-ST[n].x*k;V.y=c.y-ST[n].y*k;ap()}
+function tilt(d){setCam(()=>{if(!S.view3d){S.view3d=true;S.tilt=Math.max(S.tilt,25)}else S.tilt=Math.max(10,Math.min(65,S.tilt+d))});SFX.click()}
+function setTilt(v){if(S.view3d)setCam(()=>{S.tilt=Math.max(10,Math.min(65,+v))})}
+function toggle3d(){setCam(()=>{S.view3d=!S.view3d});refresh()}
+function rot(d){setCam(()=>{S.yaw=normYaw(S.yaw+d)});SFX.click()}
+function setYaw(v){setCam(()=>{S.yaw=normYaw(+v)})}
+function toggleShadows(){S.shadows=!S.shadows;render();refresh()}
+addEventListener('resize',()=>setCam(()=>{}));
+$('map').addEventListener('contextmenu',e=>e.preventDefault());
+const PT=new Map();let pinch=null,lastPT='mouse',tdrag=null;
+$('map').addEventListener('pointerdown',e=>{lastPT=e.pointerType;if(e.button===2){tdrag={x:e.clientX,y:e.clientY,a:S.tilt,r:S.yaw};return}PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(PT.size===2){const[a,b]=[...PT.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,k:V.k,ang:Math.atan2(b.y-a.y,b.x-a.x)};drag=null;moved=99}else{const L=toLocal(e.clientX,e.clientY);drag={cx:e.clientX,cy:e.clientY,lx:L.x,ly:L.y,vx:V.x,vy:V.y};moved=0}});
+addEventListener('pointermove',e=>{if(tdrag){const a=Math.max(10,Math.min(65,tdrag.a+(tdrag.y-e.clientY)*.25)),r=normYaw(tdrag.r+(e.clientX-tdrag.x)*.4);setCam(()=>{S.view3d=true;S.tilt=a;S.yaw=r});return}
+if(!PT.has(e.pointerId))return;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(pinch&&PT.size===2){const[a,b]=[...PT.values()],d=Math.hypot(a.x-b.x,a.y-b.y)||1;let da=Math.atan2(b.y-a.y,b.x-a.x)-pinch.ang;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;pinch.ang+=da;if(Math.abs(da)>.002)setCam(()=>{S.yaw=normYaw(S.yaw+da*180/Math.PI)});zoom(pinch.k*d/pinch.d/V.k,(a.x+b.x)/2,(a.y+b.y)/2);return}
+if(!drag)return;const L=toLocal(e.clientX,e.clientY);moved=Math.max(moved,Math.abs(e.clientX-drag.cx)+Math.abs(e.clientY-drag.cy));V.x=drag.vx+(L.x-drag.lx);V.y=drag.vy+(L.y-drag.ly);ap()});
+const pUp=e=>{tdrag=null;PT.delete(e.pointerId);if(PT.size<2)pinch=null;if(PT.size===1){const p=[...PT.values()][0],L=toLocal(p.x,p.y);drag={cx:p.x,cy:p.y,lx:L.x,ly:L.y,vx:V.x,vy:V.y}}else drag=null};
 addEventListener('pointerup',pUp);addEventListener('pointercancel',pUp);
 $('map').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15,e.clientX,e.clientY)},{passive:false});
 $('map').addEventListener('click',e=>{if(moved>6)return;if(BM){buildClick(e);return}const g=e.target.closest('.st');if(g)clickSt(+g.dataset.i)});
@@ -205,7 +243,7 @@ return{c:'#f59e0b',t:'Logros',s:`${nAch()} / ${ACH.length} · +${nAch()}% ingres
 function mRebirth(){const r=rbReq(),ok=S.money>=r;return{c:'#7c4dff',t:'Renacer',s:`Renacimientos: ${S.rb} · Multiplicador actual x${(1+.75*S.rb).toFixed(2)}`,b:`<div class="box"><div class="lvl">🔁</div><div><b style="font-size:19px">Necesitas ${$$(r)}</b><div class="pu">Tienes ${$$(S.money)} (${Math.min(100,Math.floor(S.money/r*100))}%)</div></div></div><div class="hint">Al renacer pierdes dinero, estaciones, trenes, lugares y mejoras de dinero. Ganas ingresos x${(1+.75*(S.rb+1)).toFixed(2)} para siempre y <b>${ok?tokGain():'1 o más'} fichas 💠</b> para la tienda. Eliges una nueva estación inicial.</div>${B('🔁 Renacer','#7c4dff','doRB()',ok?0:1e99)}`}}
 function doRB(){if(S.money<rbReq()||!confirm('¿Renacer? Reiniciarás tu red.'))return;const o=S,g=tokGain(),f=fresh();clearCustom();
 Object.assign(f,{rb:o.rb+1,earned:o.earned,pass:o.pass,tok:o.tok+g,fu:o.fu,ach:o.ach,stat:o.stat,tut:o.tut,tutDone:o.tutDone,bu:o.bu,newsMode:o.newsMode});f.money=700+3000*Math.pow(o.fu.cap||0,2);S=f;SFX.rebirth();closeM();render();hud();toast(`🔁 ¡Renaciste! +${g} fichas 💠`,'good',7000)}
-function mSet(){return{c:'#8b95a1',t:'Ajustes',s:'Se guarda solo en tu navegador',b:`<div class="hint">Todo funciona desde el HTML, sin servidor. Tu partida queda guardada en este navegador.</div>${B(S.newsMode==='full'?'📰 Noticias: pantalla completa (tocar para minimizar)':'📰 Noticias: minimizadas (tocar para pantalla completa)','#0ea5e9',"S.newsMode=S.newsMode==='full'?'mini':'full';refresh()")}${B('📘 Ver tutorial de nuevo','#3b82f6','S.tut=0;S.tutDone=false;closeM()')}${B('🗑️ Borrar partida','#ff5a52','wipe()')}`}}
+function mSet(){return{c:'#8b95a1',t:'Ajustes',s:'Se guarda solo en tu navegador',b:`<div class="hint">Todo funciona desde el HTML, sin servidor. Tu partida queda guardada en este navegador.</div>${B(S.newsMode==='full'?'📰 Noticias: pantalla completa (tocar para minimizar)':'📰 Noticias: minimizadas (tocar para pantalla completa)','#0ea5e9',"S.newsMode=S.newsMode==='full'?'mini':'full';refresh()")}${B(S.view3d?'🧭 Vista: 3D inclinada (tocar para 2D)':'🧭 Vista: 2D plana (tocar para 3D)','#0ea5e9','toggle3d()')}<label><b>Inclinación de cámara</b> <input type="range" min="10" max="65" value="${S.tilt}" ${S.view3d?'':'disabled'} oninput="setTilt(this.value)" style="width:55%"></label><label><b>Rotación del mapa</b> <input type="range" min="-180" max="180" value="${Math.round(S.yaw)}" oninput="setYaw(this.value)" style="width:50%"></label>${B('🧭 Norte arriba','#0ea5e9','setYaw(0);refresh()')}<div class="hint">Teclas: WASD o flechas mover · Q/E girar · R/F inclinar · Shift = rápido · 1 a 9 abren los menús · Esc cierra. Con el mouse: clic derecho y arrastrar. En el móvil: dos dedos para hacer zoom y girar.</div>${B(S.shadows?'🌑 Sombras: sí (tocar para quitar)':'🌑 Sombras: no (tocar para activar)','#0ea5e9','toggleShadows()')}${B('📘 Ver tutorial de nuevo','#3b82f6','S.tut=0;S.tutDone=false;closeM()')}${B('🗑️ Borrar partida','#ff5a52','wipe()')}`}}
 function wipe(){if(!confirm('¿Borrar todo el progreso?'))return;localStorage.removeItem('metroSt2');clearCustom();S=fresh();closeM();render();hud()}
 // ---------- Construir líneas propias ----------
 const CPAL=['#ff6b6b','#14b8a6','#ec4899','#84cc16','#f97316','#6366f1'];
@@ -242,11 +280,11 @@ S.money-=c;let nm=BM.l.nm+' '+(BM.l.st.length+1);while(ST[nm])nm+="'";addNode({n
 function confirmBuild(){if(BM&&BM.pend)placeNew(BM.pend.x,BM.pend.y)}
 function buildClick(e){const g=e.target.closest('.st');
 if(g){const n=IDX[+g.dataset.i];if(S.own[n]===undefined){toast('Solo puedes conectarte a estaciones tuyas.','bad',3000);SFX.err();return}if(BM.l.st.some(s=>s.n===n))return;const m=chkSeg(BM.last,ST[n].x,ST[n].y,n);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}addNode({n,e:1});return}
-const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k;
+const W_=toWorld(e.clientX,e.clientY),x=W_.x,y=W_.y;
 if(lastPT==='touch'||lastPT==='pen'){BM.pend={x,y};ghost(x,y);const m=chkNew(x,y);if(m){toast('⛔ '+m,'bad',2500);SFX.err()}else SFX.click();return}
 placeNew(x,y)}
 function endBuild(){if(BM.l.st.length===0)S.cl=S.cl.filter(l=>l!==BM.l);BM=null;$('gh')&&($('gh').innerHTML='');SFX.close()}
-addEventListener('pointermove',e=>{if(!BM||drag||lastPT!=='mouse')return;ghost((e.clientX-V.x)/V.k,(e.clientY-V.y)/V.k)});
+addEventListener('pointermove',e=>{if(!BM||drag||lastPT!=='mouse')return;{const W_=toWorld(e.clientX,e.clientY);ghost(W_.x,W_.y)}});
 // ---------- Tutorial ----------
 const TUT=[["elige tu estación inicial: tócala en el mapa o búscala arriba a la izquierda.",()=>S.start],["compra una estación vecina (las de borde dorado).",()=>nOwn()>=2],["mejora una estación: tócala y pulsa «Mejorar».",()=>Object.values(S.own).some(l=>l>=1)],["abre 🚇 Trenes y compra un tren extra.",()=>S.stat.trains>=1],["compra un lugar de interés: los íconos grises del mapa, tocando su estación.",()=>nPl()>=1],["abre 🛍️ Tienda y compra tu primera mejora.",()=>S.stat.ups>=1],["completa una línea entera para ganar +20% en ella. ¡Y renace cuando llegues a la meta!",()=>Object.keys(S.lineDone).length>0||S.rb>0]];
 function skipTut(){S.tutDone=true;SFX.click()}
@@ -266,7 +304,7 @@ setInterval(()=>{const now=Date.now(),dt=Math.min(5,(now-last)/1000);last=now;
 if(S.start){const c=calc();S.money+=c.inc*dt;S.earned+=c.inc*dt;S.pass+=c.pass*dt;S.cond=Math.max(0,S.cond-.02*(1-.12*ul('mant'))*dt);if(!S.bu&&S.money>=1e6){S.bu=true;toast('🛠️ <b>¡Ya puedes construir tu propia línea!</b><br><small>Abre 🛠️ Construir</small>','good',9000);SFX.ach()}evTick(now);newsTick(now);checkLines();checkAch()}
 tutTick();hud();if((sv+=dt)>5){sv=0;S.t=now;localStorage.setItem('metroSt2',JSON.stringify(S))}},250);
 addEventListener('beforeunload',()=>{S.t=Date.now();localStorage.setItem('metroSt2',JSON.stringify(S))});
-rebuildCustom();render();if(S.start){centerOn(Object.keys(S.own)[0],.8);const away=Math.min(7200,(Date.now()-(S.t||Date.now()))/1000);
+layout();rebuildCustom();render();if(S.start){centerOn(Object.keys(S.own)[0],.8);const away=Math.min(7200,(Date.now()-(S.t||Date.now()))/1000);
 if(away>60){const g=calc().inc*away*.5;S.money+=g;S.earned+=g;setTimeout(()=>toast(`😴 Mientras no estabas ganaste ${$$(g)} (50% por ${Math.round(away/60)} min).`,'good',9000),700)}}
 else centerOn('Universidad de Chile',innerWidth<700?.3:.4);
 requestAnimationFrame(loop);hud();
