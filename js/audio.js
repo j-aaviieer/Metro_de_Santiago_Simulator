@@ -1,5 +1,7 @@
 // ---------- Efectos de sonido (sintetizados con WebAudio, no necesitan archivos) ----------
 let AC_,sfxOn=localStorage.getItem('metroSfx')!=='0';
+addEventListener('pointerdown',()=>{if(AC_&&AC_.state==='suspended')AC_.resume()});
+document.addEventListener('visibilitychange',()=>{if(!AC_)return;document.hidden?AC_.suspend():AC_.resume()});
 const ac=()=>AC_||(AC_=new(window.AudioContext||window.webkitAudioContext)());
 function tone(f,d,type='sine',v=.07,t0=0){if(!sfxOn)return;try{const c=ac(),o=c.createOscillator(),g=c.createGain(),t=c.currentTime+t0;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d)}catch(e){}}
 const SFX={click:()=>tone(660,.07,'triangle'),open:()=>{tone(392,.09);tone(587,.16,'sine',.08,.08)},close:()=>{tone(587,.08);tone(392,.13,'sine',.07,.07)},
@@ -38,7 +40,7 @@ function mVol(v){localStorage.setItem('metroVol',v);au.volume=v;if(mg)mg.gain.va
 function mMusic(){const np=mus?`${SONGS[mus.i].n} · ${SONGS[mus.i].g}`:li>=0&&!au.paused?LOCAL[li].title:'Nada sonando';
 let b=`<div class="box" style="background:#fff0f5;border-color:#f8c5d6"><div><b style="font-size:18px">🎧 ${np}</b><div class="pu" style="color:#b3325f">Música original, creada por código: libre de derechos.</div></div></div>
 <div class="g2">${B('⏮ Anterior','#e8467c','mNext(-1)')}${B('⏭ Siguiente','#e8467c','mNext(1)')}</div>${B('⏹ Detener música','#8b95a1','mStop();refresh()')}
-<label><b>Volumen</b> <input type="range" min="0" max="1" step=".05" value="${mg?mg.gain.value:+(localStorage.getItem('metroVol')||.5)}" oninput="mVol(this.value)" style="width:60%"></label>
+<label><b>Volumen</b> <input type="range" min="0" max="1" step=".05" value="${+(localStorage.getItem('metroVol')||.5)}" oninput="mVol(this.value)" style="width:60%"></label>
 <label><b>Efectos de sonido</b> <input type="checkbox" ${sfxOn?'checked':''} onchange="sfxOn=this.checked;localStorage.setItem('metroSfx',sfxOn?1:0);SFX.click()"></label>
 <b style="font-size:18px">🎶 Canciones</b><div class="g2">`;
 SONGS.forEach((s,i)=>b+=`<div class="card ${mus&&mus.i===i?'on':''}"><b>${s.n}</b><small>${s.g} · ${s.bpm} BPM · inspirada en música chilena</small>${B('▶ Tocar','#e8467c',`mPlay(${i});refresh()`)}</div>`);b+='</div>';

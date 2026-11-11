@@ -98,14 +98,14 @@ for(const k in LINES){const L=LINES[k],a=L.st;for(let i=1;i<a.length;i++){const 
 if(S.start&&!(op||oq))continue;if(!vis(p)||!vis(q))continue;const on=op&&oq,A=ST[p],B_=ST[q];
 h+=`<line x1="${A.x}" y1="${A.y}" x2="${B_.x}" y2="${B_.y}" stroke="${L.c}" stroke-width="${on?10:7}" stroke-linecap="round" opacity="${on?1:.3}"/>`}}
 IDX.forEach((n,i)=>{if(!vis(n))return;const s=ST[n],o=S.own[n]!==undefined,b=canBuy(n),tr=s.ls.length>1,r=tr?12:8,p=PL[n];
-h+=`<g class="st" data-i="${i}"><circle cx="${s.x}" cy="${s.y}" r="22" fill="transparent"/>`;
+h+=`<g class="st" data-i="${i}"><circle class="hit" cx="${s.x}" cy="${s.y}" r="${hitR()}" fill="transparent"/>`;
 if(p&&S.start){const got=S.place[n],dx=hash(n)%2?-48:48,dy=-48;
 h+=`<line x1="${s.x}" y1="${s.y}" x2="${s.x+dx}" y2="${s.y+dy}" stroke="#9aa5b1" stroke-width="3" stroke-dasharray="5 5" opacity=".6"/><g class="pl ${got?'got':''}" transform="translate(${s.x+dx} ${s.y+dy})"><circle r="24" fill="#fff" stroke="${got?'#f0a800':'#b8c1ca'}" stroke-width="4"/><text y="10" font-size="28" text-anchor="middle">${p[1]}</text></g>`;
 if(got)h+=`<text class="lb k" x="${s.x+dx}" y="${s.y+dy+42}">${p[0]}</text>`}
 h+=`<circle class="${b?'pulse':''}" cx="${s.x}" cy="${s.y}" r="${r}" fill="#fff" stroke="${o?'#222':b?'#f5a300':'#aab4bc'}" stroke-width="3"/>`;
 if(tr)s.ls.forEach((l,j)=>h+=`<circle cx="${s.x+(j-(s.ls.length-1)/2)*7}" cy="${s.y}" r="3" fill="${LINES[l].c}"/>`);
 h+=`<text class="lb ${o||b?'k':''}" x="${s.x}" y="${s.y+r+18}">${n}${o?' ·'+S.own[n]:''}</text></g>`});
-h+='<g id="gh" pointer-events="none"></g><g id="tg" pointer-events="none"></g>';$('w').innerHTML=h;buildTrains()}
+h+='<g id="gh" pointer-events="none"></g><g id="tg" pointer-events="none"></g>';$('w').innerHTML=h;buildTrains();if(BM&&BM.pend)ghost(BM.pend.x,BM.pend.y)}
 // ---------- Trenes animados ----------
 let TR=[],lt=0;
 function buildTrains(){let h='';TR=[];
@@ -122,12 +122,18 @@ const a=r.pts[j-1],b=r.pts[j],f=(d-r.cum[j-1])/((r.cum[j]-r.cum[j-1])||1);let an
 r.el.setAttribute('transform',`translate(${a[0]+(b[0]-a[0])*f} ${a[1]+(b[1]-a[1])*f}) rotate(${ang})`)});requestAnimationFrame(loop)}
 // ---------- Zoom / pan ----------
 let V={x:0,y:0,k:.4},drag=null,moved=0;
-const ap=()=>{$('w').setAttribute('transform',`translate(${V.x} ${V.y}) scale(${V.k})`);$('map').classList.toggle('zl',V.k<.7)};
+const hitR=()=>Math.min(46,Math.max(22,26/V.k));
+const ap=()=>{$('w').setAttribute('transform',`translate(${V.x} ${V.y}) scale(${V.k})`);$('map').classList.toggle('zl',V.k<.7);const r=hitR();document.querySelectorAll('.hit').forEach(c=>c.setAttribute('r',r))};
 function zoom(f,cx=innerWidth/2,cy=innerHeight/2){const k=Math.min(2.5,Math.max(.15,V.k*f));f=k/V.k;V.x=cx-(cx-V.x)*f;V.y=cy-(cy-V.y)*f;V.k=k;ap()}
 function centerOn(n,k=.8){V.k=k;V.x=innerWidth/2-ST[n].x*k;V.y=innerHeight/2-ST[n].y*k;ap()}
-$('map').addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,vx:V.x,vy:V.y};moved=0});
-addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));V.x=drag.vx+dx;V.y=drag.vy+dy;ap()});
-addEventListener('pointerup',()=>drag=null);
+const PT=new Map();let pinch=null,lastPT='mouse';
+$('map').addEventListener('pointerdown',e=>{lastPT=e.pointerType;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(PT.size===2){const[a,b]=[...PT.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,k:V.k};drag=null;moved=99}else{drag={x:e.clientX,y:e.clientY,vx:V.x,vy:V.y};moved=0}});
+addEventListener('pointermove',e=>{if(!PT.has(e.pointerId))return;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(pinch&&PT.size===2){const[a,b]=[...PT.values()],d=Math.hypot(a.x-b.x,a.y-b.y)||1;zoom(pinch.k*d/pinch.d/V.k,(a.x+b.x)/2,(a.y+b.y)/2);return}
+if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));V.x=drag.vx+dx;V.y=drag.vy+dy;ap()});
+const pUp=e=>{PT.delete(e.pointerId);if(PT.size<2)pinch=null;if(PT.size===1){const p=[...PT.values()][0];drag={x:p.x,y:p.y,vx:V.x,vy:V.y}}else drag=null};
+addEventListener('pointerup',pUp);addEventListener('pointercancel',pUp);
 $('map').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15,e.clientX,e.clientY)},{passive:false});
 $('map').addEventListener('click',e=>{if(moved>6)return;if(BM){buildClick(e);return}const g=e.target.closest('.st');if(g)clickSt(+g.dataset.i)});
 $('dl').innerHTML=IDX.map(n=>`<option value="${n}">`).join('');
@@ -226,16 +232,21 @@ function newLine(){if(S.cl.length>=5){toast('Máximo 5 líneas propias.','bad',3
 const nm=(prompt('Nombre de tu línea:','Línea '+(S.cl.length+1))||'').trim().slice(0,14);if(!nm)return;
 let k=S.cl.length+1;while(S.cl.some(l=>l.id==='X'+k))k++;const l={id:'X'+k,nm,c:CPAL[S.cl.length%CPAL.length],st:[]};S.cl.push(l);startBuild(l,null)}
 function extendLine(i){const l=S.cl[i];if(l.st.length>=25){toast('Esa línea ya tiene 25 estaciones.','bad',3000);return}startBuild(l,l.st[l.st.length-1].n)}
-function addNode(nd){cInject(BM.l,nd);BM.l.st.push(nd);if(S.own[nd.n]===undefined)S.own[nd.n]=0;startTrains(nd.n);BM.last=nd.n;SFX.buy();render();hud()}
-function buildClick(e){const g=e.target.closest('.st');
-if(g){const n=IDX[+g.dataset.i];if(S.own[n]===undefined){toast('Solo puedes conectarte a estaciones tuyas.','bad',3000);SFX.err();return}if(BM.l.st.some(s=>s.n===n))return;const m=chkSeg(BM.last,ST[n].x,ST[n].y,n);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}addNode({n,e:1});return}
-const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k,m=chkNew(x,y);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}
+function addNode(nd){BM.pend=null;cInject(BM.l,nd);BM.l.st.push(nd);if(S.own[nd.n]===undefined)S.own[nd.n]=0;startTrains(nd.n);BM.last=nd.n;SFX.buy();render();hud()}
+function ghost(x,y){const gh=$('gh');if(!gh)return;const bad=chkNew(x,y),col=bad?'#ff5a52':'#22c36b';
+let h=`<circle cx="${x}" cy="${y}" r="90" fill="${col}" opacity=".12" stroke="${col}" stroke-dasharray="8 6" stroke-width="3"/><circle cx="${x}" cy="${y}" r="9" fill="${col}"/>`;
+if(BM.last)h+=`<line x1="${ST[BM.last].x}" y1="${ST[BM.last].y}" x2="${x}" y2="${y}" stroke="${BM.l.c}" stroke-width="8" opacity=".5" stroke-linecap="round"/>`;gh.innerHTML=h}
+function placeNew(x,y){const m=chkNew(x,y);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}
 const c=cuCost();if(S.money<c){toast('No te alcanza: necesitas '+$$(c),'bad',3000);SFX.err();return}
 S.money-=c;let nm=BM.l.nm+' '+(BM.l.st.length+1);while(ST[nm])nm+="'";addNode({n:nm,x:Math.round(x),y:Math.round(y),e:0})}
+function confirmBuild(){if(BM&&BM.pend)placeNew(BM.pend.x,BM.pend.y)}
+function buildClick(e){const g=e.target.closest('.st');
+if(g){const n=IDX[+g.dataset.i];if(S.own[n]===undefined){toast('Solo puedes conectarte a estaciones tuyas.','bad',3000);SFX.err();return}if(BM.l.st.some(s=>s.n===n))return;const m=chkSeg(BM.last,ST[n].x,ST[n].y,n);if(m){toast('⛔ '+m,'bad',3000);SFX.err();return}addNode({n,e:1});return}
+const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k;
+if(lastPT==='touch'||lastPT==='pen'){BM.pend={x,y};ghost(x,y);const m=chkNew(x,y);if(m){toast('⛔ '+m,'bad',2500);SFX.err()}else SFX.click();return}
+placeNew(x,y)}
 function endBuild(){if(BM.l.st.length===0)S.cl=S.cl.filter(l=>l!==BM.l);BM=null;$('gh')&&($('gh').innerHTML='');SFX.close()}
-addEventListener('pointermove',e=>{if(!BM||drag)return;const gh=$('gh');if(!gh)return;const x=(e.clientX-V.x)/V.k,y=(e.clientY-V.y)/V.k,bad=chkNew(x,y),col=bad?'#ff5a52':'#22c36b';
-let h=`<circle cx="${x}" cy="${y}" r="90" fill="${col}" opacity=".12" stroke="${col}" stroke-dasharray="8 6" stroke-width="3"/><circle cx="${x}" cy="${y}" r="9" fill="${col}"/>`;
-if(BM.last)h+=`<line x1="${ST[BM.last].x}" y1="${ST[BM.last].y}" x2="${x}" y2="${y}" stroke="${BM.l.c}" stroke-width="8" opacity=".5" stroke-linecap="round"/>`;gh.innerHTML=h});
+addEventListener('pointermove',e=>{if(!BM||drag||lastPT!=='mouse')return;ghost((e.clientX-V.x)/V.k,(e.clientY-V.y)/V.k)});
 // ---------- Tutorial ----------
 const TUT=[["elige tu estación inicial: tócala en el mapa o búscala arriba a la izquierda.",()=>S.start],["compra una estación vecina (las de borde dorado).",()=>nOwn()>=2],["mejora una estación: tócala y pulsa «Mejorar».",()=>Object.values(S.own).some(l=>l>=1)],["abre 🚇 Trenes y compra un tren extra.",()=>S.stat.trains>=1],["compra un lugar de interés: los íconos grises del mapa, tocando su estación.",()=>nPl()>=1],["abre 🛍️ Tienda y compra tu primera mejora.",()=>S.stat.ups>=1],["completa una línea entera para ganar +20% en ella. ¡Y renace cuando llegues a la meta!",()=>Object.keys(S.lineDone).length>0||S.rb>0]];
 function skipTut(){S.tutDone=true;SFX.click()}
@@ -246,7 +257,7 @@ function hud(){const c=calc(),h=happy();$('mM').textContent=$$(S.money);$('mI').
 $('sE').textContent=$$(S.earned);$('sP').textContent=Math.floor(S.pass).toLocaleString('es-CL');$('sH').textContent='🙂 '+h+'%';$('sHb').style.width=h+'%';$('sR').textContent=S.rb+' · 💠'+S.tok;
 const t=S.tutDone?'':`📘 <b>Tutorial ${Math.min(S.tut+1,TUT.length)}/${TUT.length}</b> — ${TUT[Math.min(S.tut,TUT.length-1)][0]} <button class="sk" onclick="skipTut()">Saltar</button>`;
 if(t!==tipC){tipC=t;$('tip').innerHTML=t;$('tip').style.display=t?'block':'none'}
-const bt=BM?`🛠️ Construyendo <b>${BM.l.nm}</b> · próxima estación ${$$(cuCost())} <button class="sk" onclick="endBuild()">✅ Terminar</button>`:'';if(bt!==bmC){bmC=bt;$('bmb').innerHTML=bt;$('bmb').style.display=bt?'block':'none'}
+const bt=BM?`🛠️ Construyendo <b>${BM.l.nm}</b> · próxima estación ${$$(cuCost())} ${BM.pend?`<button class="sk ok" onclick="confirmBuild()">✔ Colocar aquí</button>`:(lastPT!=='mouse'?'· toca el mapa':'')} <button class="sk" onclick="endBuild()">✅ Terminar</button>`:'';if(bt!==bmC){bmC=bt;$('bmb').innerHTML=bt;$('bmb').style.display=bt?'block':'none'}
 $('rbp').textContent='🔁 Renacer '+Math.min(100,Math.floor(S.money/rbReq()*100))+'%';
 const eb=$('evb');if(S.ev){const e=EVS[S.ev.id],left=Math.max(0,(S.ev.end-Date.now())/1000);eb.style.display='block';eb.className='panel '+(e.neg?'bad':'good');eb.innerHTML=`${e.e} <b>${e.n}</b> · ${Math.ceil(left)}s<div class="bar"><i style="width:${left*1000/S.ev.tot*100}%"></i></div>`}else eb.style.display='none';
 document.querySelectorAll('[data-cost]').forEach(b=>b.disabled=S.money<+b.dataset.cost)}
@@ -257,5 +268,5 @@ tutTick();hud();if((sv+=dt)>5){sv=0;S.t=now;localStorage.setItem('metroSt2',JSON
 addEventListener('beforeunload',()=>{S.t=Date.now();localStorage.setItem('metroSt2',JSON.stringify(S))});
 rebuildCustom();render();if(S.start){centerOn(Object.keys(S.own)[0],.8);const away=Math.min(7200,(Date.now()-(S.t||Date.now()))/1000);
 if(away>60){const g=calc().inc*away*.5;S.money+=g;S.earned+=g;setTimeout(()=>toast(`😴 Mientras no estabas ganaste ${$$(g)} (50% por ${Math.round(away/60)} min).`,'good',9000),700)}}
-else centerOn('Universidad de Chile',.4);
+else centerOn('Universidad de Chile',innerWidth<700?.3:.4);
 requestAnimationFrame(loop);hud();
