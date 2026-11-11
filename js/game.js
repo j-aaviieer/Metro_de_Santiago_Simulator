@@ -177,7 +177,10 @@ $('map').addEventListener('click',e=>{if(moved>6)return;if(BM){buildClick(e);ret
 $('dl').innerHTML=IDX.map(n=>`<option value="${n}">`).join('');
 $('sb').addEventListener('change',e=>{const n=e.target.value;if(!ST[n])return;e.target.value='';if(vis(n)){centerOn(n);if(!S.start)clickSt(IDX.indexOf(n))}else SFX.err()});
 // ---------- Modales ----------
-let cur=null,shopTab=0;
+let cur=null,shopTab=0,confirmData=null;
+function askConfirm(t,s,message,c,action){confirmData={t,s,message,c,action};show(mConfirm)}
+function mConfirm(){const d=confirmData||{};return{c:d.c||'#7c4dff',t:d.t||'Confirmar',s:d.s||'',b:`<div class="card"><b style="font-size:17px">${d.message||'¿Estás seguro?'}</b><small>Esta acción requiere tu confirmación.</small></div><div class="g2">${B('Cancelar','#8b95a1','resolveConfirm(false)')}${B('Confirmar',d.c||'#7c4dff','resolveConfirm(true)')}</div>`}}
+function resolveConfirm(ok){const action=confirmData&&confirmData.action;confirmData=null;closeM();if(ok&&action)action()}
 const B=(l,c,fn,cost=0)=>`<button class="btn" style="--c:${c}" data-cost="${cost}" ${S.money<cost?'disabled':''} onclick="${fn}">${l}</button>`;
 function show(fn){const first=$('ov').style.display!=='flex';cur=fn;const o=fn();
 $('md').innerHTML=`<div class="mh" style="background:${o.c}"><div><h2>${o.t}</h2><div class="sub">${o.s||''}</div></div><button class="x" onclick="closeM()">✕</button></div><div class="mb2">${o.b}</div>`;
@@ -192,7 +195,7 @@ else b+=`<div class="hint">🔓 Conectada a una estación tuya.</div>${B('🚉 C
 if(p)b+=`<div class="card ${S.place[n]?'on':''}"><b>${p[1]} ${p[0]}</b><small>Turismo +CL$12/s · Todas las líneas +3%</small>${S.place[n]?'<b style="color:#16a34a">✅ Comprado</b>':o?B('Comprar '+$$(plCost()),'#f0a30f',`buyP(${i})`,plCost()):'<small>🔒 Abre la estación para comprarlo</small>'}</div>`;
 return{c:LINES[s.ls[0]].c,t:n,s:chips(s),b}}}
 const startTrains=n=>ST[n].ls.forEach(l=>S.trains[l]=S.trains[l]||1+fl('flota'));
-function clickSt(i){const n=IDX[i];SFX.click();if(!S.start){if(confirm('¿Empezar en '+n+'?')){S.start=true;S.own[n]=0;startTrains(n);SFX.buy();render();centerOn(n,.9);hud()}return}
+function clickSt(i){const n=IDX[i];SFX.click();if(!S.start){askConfirm('Estación inicial','Comenzar partida',`¿Quieres comenzar tu red en ${n}?`,'#22c36b',()=>{S.start=true;S.own[n]=0;startTrains(n);SFX.buy();render();centerOn(n,.9);hud()});return}
 if(vis(n))show(mStation(i))}
 function buy(i,silent){const n=IDX[i],c=buyCost();if(S.money<c||!canBuy(n))return false;S.money-=c;S.own[n]=0;startTrains(n);if(!silent){SFX.buy();refresh()}return true}
 function up(i,silent){const n=IDX[i];if(S.own[n]>=5)return;const c=lvCost(n);if(S.money<c)return;S.money-=c;S.own[n]++;if(!silent){SFX.up();refresh()}}
@@ -241,7 +244,8 @@ function mAch(){let b='<div class="g2">';ACH.forEach(a=>{const d=S.ach[a.id];b+=
 return{c:'#f59e0b',t:'Logros',s:`${nAch()} / ${ACH.length} · +${nAch()}% ingresos`,b:b+'</div>'}}
 // ---------- Renacer y ajustes ----------
 function mRebirth(){const r=rbReq(),ok=S.money>=r;return{c:'#7c4dff',t:'Renacer',s:`Renacimientos: ${S.rb} · Multiplicador actual x${(1+.75*S.rb).toFixed(2)}`,b:`<div class="box"><div class="lvl">🔁</div><div><b style="font-size:19px">Necesitas ${$$(r)}</b><div class="pu">Tienes ${$$(S.money)} (${Math.min(100,Math.floor(S.money/r*100))}%)</div></div></div><div class="hint">Al renacer pierdes dinero, estaciones, trenes, lugares y mejoras de dinero. Ganas ingresos x${(1+.75*(S.rb+1)).toFixed(2)} para siempre y <b>${ok?tokGain():'1 o más'} fichas 💠</b> para la tienda. Eliges una nueva estación inicial.</div>${B('🔁 Renacer','#7c4dff','doRB()',ok?0:1e99)}`}}
-function doRB(){if(S.money<rbReq()||!confirm('¿Renacer? Reiniciarás tu red.'))return;const o=S,g=tokGain(),f=fresh();clearCustom();
+function doRB(){if(S.money<rbReq())return;askConfirm('Confirmar renacimiento','Tu progreso actual se reiniciará','Perderás tu dinero, estaciones, trenes, lugares y mejoras temporales. Conservarás tus fichas y mejoras permanentes.','#7c4dff',performRB)}
+function performRB(){const o=S,g=tokGain(),f=fresh();clearCustom();
 Object.assign(f,{rb:o.rb+1,earned:o.earned,pass:o.pass,tok:o.tok+g,fu:o.fu,ach:o.ach,stat:o.stat,tut:o.tut,tutDone:o.tutDone,bu:o.bu,newsMode:o.newsMode});f.money=700+3000*Math.pow(o.fu.cap||0,2);S=f;SFX.rebirth();closeM();render();hud();toast(`🔁 ¡Renaciste! +${g} fichas 💠`,'good',7000)}
 function mSet(){return{c:'#8b95a1',t:'Ajustes',s:'Se guarda solo en tu navegador',b:`<div class="hint">Todo funciona desde el HTML, sin servidor. Tu partida queda guardada en este navegador.</div>${B(S.newsMode==='full'?'📰 Noticias: pantalla completa (tocar para minimizar)':'📰 Noticias: minimizadas (tocar para pantalla completa)','#0ea5e9',"S.newsMode=S.newsMode==='full'?'mini':'full';refresh()")}${B(S.view3d?'🧭 Vista: 3D inclinada (tocar para 2D)':'🧭 Vista: 2D plana (tocar para 3D)','#0ea5e9','toggle3d()')}<label><b>Inclinación de cámara</b> <input type="range" min="10" max="65" value="${S.tilt}" ${S.view3d?'':'disabled'} oninput="setTilt(this.value)" style="width:55%"></label><label><b>Rotación del mapa</b> <input type="range" min="-180" max="180" value="${Math.round(S.yaw)}" oninput="setYaw(this.value)" style="width:50%"></label>${B('🧭 Norte arriba','#0ea5e9','setYaw(0);refresh()')}<div class="hint">Teclas: WASD o flechas mover · Q/E girar · R/F inclinar · Shift = rápido · 1 a 9 abren los menús · Esc cierra. Con el mouse: clic derecho y arrastrar. En el móvil: dos dedos para hacer zoom y girar.</div>${B(S.shadows?'🌑 Sombras: sí (tocar para quitar)':'🌑 Sombras: no (tocar para activar)','#0ea5e9','toggleShadows()')}${B('📘 Ver tutorial de nuevo','#3b82f6','S.tut=0;S.tutDone=false;closeM()')}${B('🗑️ Borrar partida','#ff5a52','wipe()')}`}}
 function wipe(){if(!confirm('¿Borrar todo el progreso?'))return;localStorage.removeItem('metroSt2');clearCustom();S=fresh();closeM();render();hud()}
