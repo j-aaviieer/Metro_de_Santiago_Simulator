@@ -83,7 +83,7 @@ const plCost=()=>Math.floor(1500*Math.pow(1.7,nPl()));
 const trCost=k=>Math.floor(800*Math.pow(1.45,S.trains[k]||0));
 const nTrains=()=>Object.values(S.trains).reduce((a,b)=>a+b,0);
 const repCost=()=>Math.ceil((100-S.cond)*nTrains()*40);
-const rbReq=()=>250000*Math.pow(4,S.rb);
+const rbReq=()=>250000*Math.pow(2.5,S.rb);
 const tokGain=()=>1+Math.floor(Math.log2(S.money/rbReq()+1));
 const canBuy=n=>S.start&&S.own[n]===undefined&&[...ST[n].adj].some(m=>S.own[m]!==undefined);
 const vis=n=>!S.start||S.own[n]!==undefined||canBuy(n);
